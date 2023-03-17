@@ -54,21 +54,24 @@ app.post('/download', async (req, res) => {
 });
 
 app.post('/upload', cors({origin: "*"}), upload.any(), async (req, res) => {
+    function convertTypedArray(src, type) {
+        const buffer = new ArrayBuffer(src.byteLength);
+        src.constructor.from(buffer).set(src);
+        return new type(buffer);
+    }
     res.json({message: 'received trained model'});
     console.log("Received trained model from client");
     const sid = req.headers["sid"];
     let decoded = [];
-    let ind = 0;
-    console.log(req.files);
-    const wBuff = new Float32Array(req.files[0].buffer.buffer);
-    const shape = new Uint32Array(req.files[1].buffer.buffer);
-    console.log(shape);
+    let ind = 0;4
+    // Maybe label these with multer...
+    let wBuff = convertTypedArray(req.files[0].buffer, Float32Array);
+    let shape = convertTypedArray(req.files[1].buffer, Uint32Array);
     for (let i = 0; i < shape.length; i += 1){
         decoded.push(wBuff.slice(ind, ind+shape[i]));
         i += shape[i];
     }
-    console.log(decoded);
-    clients[sid].model = 0;
+    clients[sid].model = decoded;
     await aggregate(server, clients);
 });
 

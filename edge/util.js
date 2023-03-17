@@ -32,11 +32,30 @@ const sendUpstream = async (server, model) => {
 //Sends data upstream if all clients have sent a model
 const aggregate = async (server, clients) => {
     let allData = true;
-    for (let c in clients) if (!c.model) allData = false;
+    let numClients = 0;
+    for (let c in clients) {
+        if (!c.model) allData = false;
+        numClients += 1;
+    } 
     if (allData){
         //do learning
-        aggregatedModel = [];
-        await sendUpstream(server, aggregatedModel);
+        ckeys = Object.keys(clients);
+        aggregatedModel = clients[ckeys[0]];
+        for (let c = 1; c < ckeys.length; c+=1){
+            const cmodel = clients[ckeys[c]].model;
+            for (let i = 0; i < cmodel.length; i+=1){
+                for (let j = 0; j < cmodel[i].length; c+=1){
+                    if (c = 1) aggregatedModel[i][j] /= numClients;
+                    aggregatedModel[i][j] += cmodel[i][j]/numClients;
+                }
+            }
+        }
+        const amodel = await tf.loadLayersModel("file://" + path.join(__dirname, "model","model.json"));
+        for (let i = 0; i < amodel.getWeights().length; i++) {
+            amodel.getWeights()[i].setWeights(aggregatedModel[i]);
+        }
+        await amodel.save("file://" + path.join(__dirname, "model"));
+        await sendUpstream(server, "nothing yet, still need to implement iterations");
     }
 }
 

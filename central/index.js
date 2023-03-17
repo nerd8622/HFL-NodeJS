@@ -14,6 +14,7 @@ const port = 3000;
 const host = "127.0.0.1";
 const edge_servers = {};
 const curModel = {};
+const dataSize = 400;
 
 app.get('/', async (req, res) => {
     //Replace with control panel or information...
@@ -22,7 +23,7 @@ app.get('/', async (req, res) => {
 
 app.get('/start', async (req, res) => {
     res.json({message: 'Starting!'});
-    curModel.data = generateTrainPartitions(edge_servers, 40000);
+    curModel.data = generateTrainPartitions(edge_servers, dataSize);
     console.log(curModel.data);
     await model.save("file://" + path.join(__dirname, "model"));
     curModel.model = `http://${host}:${port}/model/model.json`;
