@@ -20,14 +20,35 @@ const sendDownstream = async (servers, model) => {
     }
 }
 
-const aggregate = async (edge_servers, model) => {
+const aggregate = async (edge_servers, iterations) => {
     const allData = true;
-    for (let e in edge_servers) if (!edge_servers[e].model) allData = false;
+    let numEdges = 0;
+    for (let e in edge_servers) {
+        if (!edge_servers[e].model) allData = false;
+        numEdges += 1;
+    }
     if (allData){
         //do learning
-        aggregatedModel = {};
-        model = aggregatedModel;
+        ekeys = Object.keys(edge_servers);
+        aggregatedModel = edge_servers[ekeys[0]].model;
+        for (let e = 1; e < ekeys.length; e+=1){
+            const emodel = edge_servers[ekeys[e]].model;
+            for (let i = 0; i < emodel.length; i+=1){
+                for (let j = 0; j < emodel[i].length; c+=1){
+                    if (e = 1) aggregatedModel[i][j] /= numEdges;
+                    aggregatedModel[i][j] += emodel[i][j]/numEdges;
+                }
+            }
+        }
+        const amodel = await tf.loadLayersModel("file://" + path.join(__dirname, "model","model.json"));
+        const layers = amodel.layers;
+        for (let i = 0; i < layers.length; i+=1) {
+            layers[i].setWeights([tf.tensor(aggregatedModel[i*2], layers[i].kernel.shape), tf.tensor(aggregatedModel[i*2+1], layers[i].bias.shape)]);
+        }
+        await amodel.save("file://" + path.join(__dirname, "model"));
+        return true;
     }
+    return false;
 }
 
 const generateTrainPartitions = (edge_servers, modelSize) => {

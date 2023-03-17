@@ -51,11 +51,9 @@
             let ind = 0;
             for (let i = 0; i < shape.length; i++){
                 weightsT.set(weights[i], ind);
-                ind += weights[i];
+                ind += shape[i];
             }
             const shapeT = new Uint32Array(shape);
-            console.log(weightsT);
-            console.log(shapeT);
             const weightBlob = new Blob([new Uint8Array(weightsT.buffer)]);
             const form = new FormData();
             form.append('weights', weightBlob);

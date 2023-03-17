@@ -1,6 +1,7 @@
 // Copyright (c) 2023 David Canaday
 
 const express = require('express');
+const multer  = require('multer');
 const path = require('path');
 const { errorMiddleware, sendDownstream, aggregate, generateTrainPartitions } = require('./util.js');
 const { model } = require('./model.js');
@@ -8,6 +9,7 @@ const { model } = require('./model.js');
 const app = express();
 app.use(express.json());
 app.use("/model", express.static(path.join(__dirname, "model")));
+const upload = multer();
 //app.use(authMiddleware);
 
 const port = 3000;
@@ -43,11 +45,37 @@ app.post('/register', async (req, res) => {
     console.log(req.body);
 });
 
-app.post('/upload', async (req, res) => {
+app.post('/upload', upload.any(), async (req, res) => {
+    function convertTypedArray(src, type) {
+        const buffer = new ArrayBuffer(src.byteLength);
+        src.constructor.from(buffer).set(src);
+        return new type(buffer);
+    }
+    const eurl = req.body.url;
     res.json({message: 'received model!'});
-    edge_servers[req.body.url].model = req.body.model;
     console.log("Received averaged model from edge server!");
-    aggregate(edge_servers, curModel);
+    let decoded = [];
+    let ind = 0;
+    // Maybe label these with multer...
+    let wBuff = convertTypedArray(req.files[0].buffer, Float32Array);
+    let shape = convertTypedArray(req.files[1].buffer, Uint32Array);
+    for (let i = 0; i < shape.length; i += 1){
+        decoded.push(wBuff.slice(ind, ind+shape[i]));
+        ind += shape[i];
+    }
+    edge_servers[eurl].model = decoded;
+    const agg = await aggregate(edge_servers, iterations);
+    if (agg){
+        central_iterations -= 1;
+        if (central_iterations[0] > 0){
+            model.model = `http://${host}:${port}/model/model.json`;
+            model.callback = `http://${host}:${port}/upload`;
+            model.iterations = iterations.slice(1);
+            await sendDownstream(edge_servers, model);
+        } else{
+            console.log("ALL DONE!!!");
+        }
+    }
 });
 
 app.post('/status', async (req, res) => {

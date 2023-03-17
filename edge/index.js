@@ -8,7 +8,7 @@ const axios = require('axios');
 const path = require('path');
 var cors = require('cors')
 const tf = require('@tensorflow/tfjs-node');
-const { errorMiddleware, sendDownstream, aggregate, apiPost } = require('./util.js');
+const { errorMiddleware, sendDownstream, sendUpstream, aggregate, apiPost } = require('./util.js');
 
 const app = express();
 const httpServer = createServer(app);
@@ -50,7 +50,7 @@ app.post('/download', async (req, res) => {
     await fmodel.save("file://" + path.join(__dirname, "model"));
     model.model = `http://${host}:${port}/model/model.json`;
     model.callback = `http://${host}:${port}/upload`;
-    edge_iterations = model.iterations[0];
+    edge_iterations = model.iterations;
     model.iterations = model.iterations[1];
     await sendDownstream(clients, model);
     console.log("Recieved model from Central Server");
@@ -66,16 +66,28 @@ app.post('/upload', cors({origin: "*"}), upload.any(), async (req, res) => {
     console.log("Received trained model from client");
     const sid = req.headers["sid"];
     let decoded = [];
-    let ind = 0;4
+    let ind = 0;
     // Maybe label these with multer...
     let wBuff = convertTypedArray(req.files[0].buffer, Float32Array);
     let shape = convertTypedArray(req.files[1].buffer, Uint32Array);
     for (let i = 0; i < shape.length; i += 1){
         decoded.push(wBuff.slice(ind, ind+shape[i]));
-        i += shape[i];
+        ind += shape[i];
     }
     clients[sid].model = decoded;
-    await aggregate(server, clients, edge_iterations);
+    const agg = await aggregate(server, clients, edge_iterations);
+    if (agg){
+        edge_iterations[0] -= 1;
+        if (edge_iterations[0] > 0){
+            model.model = `http://${host}:${port}/model/model.json`;
+            model.callback = `http://${host}:${port}/upload`;
+            model.iterations = edge_iterations[1];
+            await sendDownstream(clients, model);
+        } else{
+            sendUpstream(server);
+        }
+    }
+    console.log(edge_iterations);
 });
 
 io.on('connection', async (sock) => {

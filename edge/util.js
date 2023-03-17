@@ -2,6 +2,8 @@
 
 const axios = require('axios');
 const BodyFormData = require('form-data');
+const tf = require('@tensorflow/tfjs-node');
+const path = require('path');
 
 const sendDownstream = async (clients, model) => {
     let i = 0;
@@ -25,8 +27,33 @@ const apiPost = async (url, data) => {
     return await axios(opt);
 }
 
-const sendUpstream = async (server, model) => {
-    const response = await apiPost(`${server.url}/upload`, model);
+const sendUpstream = async (server) => {
+    const umodel = await tf.loadLayersModel("file://" + path.join(__dirname, "model","model.json"));
+    let weights = [];
+    let shape = [];
+    for (let i = 0; i < umodel.getWeights().length; i++) {
+        weights.push(await umodel.getWeights()[i].data());
+        shape.push(weights[i].length);
+    }
+    let weightsT = new Float32Array(shape.reduce((a, b) => a + b, 0));
+    let ind = 0;
+    for (let i = 0; i < shape.length; i++){
+        weightsT.set(weights[i], ind);
+        ind += shape[i];
+    }
+    const shapeT = new Uint32Array(shape);
+    const weightBlob = new Blob([new Uint8Array(weightsT.buffer)]);
+    const shapeBlob = new Blob([new Uint8Array(shapeT.buffer)]);
+    const form = new FormData();
+    form.append('weights', weightBlob);
+    form.append('shape', shapeBlob);
+    form.append('url', server.callback);
+    const opt = {
+        url: `${server.url}/upload`,
+        method: "POST",
+        data: form
+    };
+    const response = await apiPost(`${server.url}/upload`, form);
 }
 
 //Sends data upstream if all clients have sent a model
@@ -34,14 +61,13 @@ const aggregate = async (server, clients, edge_iterations) => {
     let allData = true;
     let numClients = 0;
     for (let c in clients) {
-        if (!c.model) allData = false;
+        if (!clients[c].model) allData = false;
         numClients += 1;
     } 
     if (allData){
         //do learning
-        edge_iterations -= 1;
         ckeys = Object.keys(clients);
-        aggregatedModel = clients[ckeys[0]];
+        aggregatedModel = clients[ckeys[0]].model;
         for (let c = 1; c < ckeys.length; c+=1){
             const cmodel = clients[ckeys[c]].model;
             for (let i = 0; i < cmodel.length; i+=1){
@@ -52,15 +78,12 @@ const aggregate = async (server, clients, edge_iterations) => {
             }
         }
         const amodel = await tf.loadLayersModel("file://" + path.join(__dirname, "model","model.json"));
-        for (let i = 0; i < amodel.getWeights().length; i++) {
-            amodel.getWeights()[i].setWeights(aggregatedModel[i]);
+        const layers = amodel.layers;
+        for (let i = 0; i < layers.length; i+=1) {
+            layers[i].setWeights([tf.tensor(aggregatedModel[i*2], layers[i].kernel.shape), tf.tensor(aggregatedModel[i*2+1], layers[i].bias.shape)]);
         }
         await amodel.save("file://" + path.join(__dirname, "model"));
-        if (edge_iterations > 0){
-            return true;
-        }else{
-            await sendUpstream(server, "nothing yet, still need to implement iterations");
-        }
+        return true;
     }
     return false;
 }
@@ -86,4 +109,4 @@ const authMiddleware = (req, res, next) => {
     }
 }
 
-module.exports = { errorMiddleware, authMiddleware, sendDownstream, aggregate, apiPost};
+module.exports = { errorMiddleware, authMiddleware, sendDownstream, sendUpstream, aggregate, apiPost};
