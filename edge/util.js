@@ -56,37 +56,32 @@ const sendUpstream = async (server) => {
 
 //Sends data upstream if all clients have sent a model
 const aggregate = async (clients) => {
-    let allData = true;
     let numClients = 0;
     for (let c in clients) {
-        if (!clients[c].model) allData = false;
+        if (!clients[c].model) return false;
         numClients += 1;
     } 
-    console.log(allData);
-    if (allData){
-        //do learning
-        ckeys = Object.keys(clients);
-        aggregatedModel = Object.assign({},clients[ckeys[0]].model);
-        clients[ckeys[0]].model = false;
-        for (let c = 1; c < ckeys.length; c+=1){
-            const cmodel = clients[ckeys[c]].model;
-            for (let i = 0; i < cmodel.length; i+=1){
-                for (let j = 0; j < cmodel[i].length; c+=1){
-                    if (c = 1) aggregatedModel[i][j] /= numClients;
-                    aggregatedModel[i][j] += cmodel[i][j]/numClients;
-                    clients[ckeys[c]].model = false;
-                }
+    //do learning
+    ckeys = Object.keys(clients);
+    aggregatedModel = Object.assign({},clients[ckeys[0]].model);
+    clients[ckeys[0]].model = false;
+    for (let c = 1; c < ckeys.length; c+=1){
+        const cmodel = clients[ckeys[c]].model;
+        for (let i = 0; i < cmodel.length; i+=1){
+            for (let j = 0; j < cmodel[i].length; j+=1){
+                if (c = 1) aggregatedModel[i][j] /= numClients;
+                aggregatedModel[i][j] += cmodel[i][j]/numClients;
             }
         }
-        const amodel = await tf.loadLayersModel("file://" + path.join(__dirname, "model","model.json"));
-        const layers = amodel.layers;
-        for (let i = 0; i < layers.length; i+=1) {
-            layers[i].setWeights([tf.tensor(aggregatedModel[i*2], layers[i].kernel.shape), tf.tensor(aggregatedModel[i*2+1], layers[i].bias.shape)]);
-        }
-        await amodel.save("file://" + path.join(__dirname, "model"));
-        return true;
+        clients[ckeys[c]].model = false;
     }
-    return false;
+    const amodel = await tf.loadLayersModel("file://" + path.join(__dirname, "model","model.json"));
+    const layers = amodel.layers;
+    for (let i = 0; i < layers.length; i+=1) {
+        layers[i].setWeights([tf.tensor(aggregatedModel[i*2], layers[i].kernel.shape), tf.tensor(aggregatedModel[i*2+1], layers[i].bias.shape)]);
+    }
+    await amodel.save("file://" + path.join(__dirname, "model"));
+    return true;
 }
 
 const errorMiddleware = (err, req, res, next) => {

@@ -88,7 +88,7 @@ app.post('/upload', cors({origin: "*"}), upload.any(), async (req, res) => {
         if (edge_iterations[0] > 0){
             await sendDownstream(clients);
         } else{
-            sendUpstream(server);
+            await sendUpstream(server);
         }
     }
     console.log(edge_iterations);
