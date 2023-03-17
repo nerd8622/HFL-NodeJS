@@ -18,10 +18,8 @@
 // Modified to allow the splitting of dataset so that each client 
 // can train on a different piece. -David
 
-import * as tf from '@tensorflow/tfjs';
-
-export const IMAGE_H = 28;
-export const IMAGE_W = 28;
+const IMAGE_H = 28;
+const IMAGE_W = 28;
 const IMAGE_SIZE = IMAGE_H * IMAGE_W;
 const NUM_CLASSES = 10;
 const NUM_DATASET_ELEMENTS = 65000;

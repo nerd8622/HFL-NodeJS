@@ -37,9 +37,9 @@ const generateTrainPartitions = (edge_servers, modelSize) => {
     let out = [];
     let ind = 0;
     for (let ed in edge_servers) {
-        const edge = edges[ed];
+        const edge = edge_servers[ed];
         let temp = []
-        for (let i = 0; i > edge.numClient; i++) {
+        for (let i = 0; i < edge.numClients; i++) {
             temp.push({
                 start: ind,
                 size: perClient

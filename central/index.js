@@ -22,7 +22,8 @@ app.get('/', async (req, res) => {
 
 app.get('/start', async (req, res) => {
     res.json({message: 'Starting!'});
-    curModel.data = generateTrainPartitions(edge_servers);
+    curModel.data = generateTrainPartitions(edge_servers, 40000);
+    console.log(curModel.data);
     await model.save("file://" + path.join(__dirname, "model"));
     curModel.model = `http://${host}:${port}/model/model.json`;
     await sendDownstream(edge_servers, curModel);
