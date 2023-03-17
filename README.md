@@ -2,6 +2,7 @@
 Hierarchical Federated Learning implementation is NodeJS. Created by David Canaday to aide an undergraduate research program at Colorado School of Mines.
 
 # Usage Instructions
+0. Ensure you are running NodeJS 18.X.X or above!
 1. Run `npm i`
 2. Run "start_central.bat" and "start_client_server.bat"
 3. Run "start_edge.bat" as many times as needed and specify a port each time.
