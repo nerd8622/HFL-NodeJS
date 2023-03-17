@@ -69,7 +69,7 @@ const aggregate = async (clients) => {
         const cmodel = clients[ckeys[c]].model;
         for (let i = 0; i < cmodel.length; i+=1){
             for (let j = 0; j < cmodel[i].length; j+=1){
-                if (c = 1) aggregatedModel[i][j] /= numClients;
+                if (c == 1) aggregatedModel[i][j] /= numClients;
                 aggregatedModel[i][j] += cmodel[i][j]/numClients;
             }
         }
