@@ -2,12 +2,11 @@
 
 const express = require('express');
 const path = require('path');
-const { errorMiddleware, sendDownstream, aggregate } = require('./util.js');
+const { errorMiddleware, sendDownstream, aggregate, generateTrainPartitions } = require('./util.js');
 const { model } = require('./model.js');
-const mnistData = require('./data.js'); 
 
 const app = express();
-app.use(express.json({limit: '500mb'}));
+app.use(express.json());
 app.use("/model", express.static(path.join(__dirname, "model")));
 //app.use(authMiddleware);
 
@@ -23,9 +22,7 @@ app.get('/', async (req, res) => {
 
 app.get('/start', async (req, res) => {
     res.json({message: 'Starting!'});
-    await mnistData.loadData();
-    const data = await mnistData.getTrainData(edge_servers);
-    curModel.data = data;
+    curModel.data = generateTrainPartitions(edge_servers);
     await model.save("file://" + path.join(__dirname, "model"));
     curModel.model = `http://${host}:${port}/model/model.json`;
     await sendDownstream(edge_servers, curModel);

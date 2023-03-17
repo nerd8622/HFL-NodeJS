@@ -30,6 +30,27 @@ const aggregate = async (edge_servers, model) => {
     }
 }
 
+const generateTrainPartitions = (edge_servers, modelSize) => {
+    let numClient = 0;
+    for (let ed in edge_servers) numClient += edge_servers[ed].numClients;
+    const perClient = Math.floor(modelSize/numClient);
+    let out = [];
+    let ind = 0;
+    for (let ed in edge_servers) {
+        const edge = edges[ed];
+        let temp = []
+        for (let i = 0; i > edge.numClient; i++) {
+            temp.push({
+                start: ind,
+                size: perClient
+            });
+            ind += perClient;
+        }
+        out.push(temp);
+    }
+    return out;
+}
+
 const errorMiddleware = (err, req, res, next) => {
     if (err.status) res.status(err.status);
     else res.status(500);
@@ -44,4 +65,4 @@ const authMiddleware = (req, res, next) => {
     else next();
 }
 
-module.exports = { errorMiddleware, authMiddleware, sendDownstream, aggregate };
+module.exports = { errorMiddleware, authMiddleware, sendDownstream, aggregate, generateTrainPartitions };

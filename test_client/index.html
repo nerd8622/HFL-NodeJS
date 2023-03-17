@@ -11,6 +11,7 @@
     </div>
     <script src="console.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+    <script src="data.js"></script>
     <script>
         window.addEventListener("load", function () {
             ConsoleJS.init({selector: "pre.console"});
@@ -23,25 +24,17 @@
         import { io } from "https://cdn.socket.io/4.4.1/socket.io.esm.min.js";
         const socket = io(`ws://127.0.0.1:${hash}`);
 
-        const tensorSerializer = async (tensor) => {
-            const data = await tensor.data();
-            const tb64 = Buffer.from(new UInt8Array(data.buffer)).toString('base64');
-            return {data: tb64, shape: s, ttype: typeof data};
-        }
-
-        const tensorUnSerializer = async (sdata) => {
-            const raw = Uint8Array.from(atob(sdata.data), c => c.charCodeAt(0));
-            return tf.tensor(raw, sdata.shape, sdata.ttype);
-        }
-
         socket.on('download', async (message) =>{
             console.log("Received model from Edge Server!");
             const model = await tf.loadLayersModel(message.model);
-            const {images: trainImages, labels: trainLabels} = message.data;
-            const trImages = await tensorUnSerializer(trainImages);
-            const trLabels = await tensorUnSerializer(trainLabels);
+
+            const data = new MnistData();
+            await data.load(message.data.start, message.data.size);
+            const {trImages, trLabels} = data.getTrainData();
+
             //const trImages = tf.tensor2d(new Float32Array(Uint8Array.from(atob(trainImages), c => c.charCodeAt(0)).buffer), imagesShape);
             //const trLabels = tf.oneHot(tf.tensor1d(new Int32Array(Uint8Array.from(atob(trainLabels), c => c.charCodeAt(0)).buffer), 'int32'), LABEL_FLAT_SIZE).toFloat();
+            
             console.log(model.summary());
             await model.compile({
                 optimizer: 'adam',

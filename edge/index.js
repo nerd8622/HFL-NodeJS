@@ -16,7 +16,7 @@ const io = new Server(httpServer, {
         origin: '*',
     }
 });
-app.use(express.json({limit: '500mb'}));
+app.use(express.json());
 app.use("/model", cors({origin: "*"}), express.static(path.join(__dirname, "model")));
 //app.use(authMiddleware);
 
