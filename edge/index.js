@@ -71,7 +71,7 @@ app.post('/upload', cors({origin: "*"}), upload.any(), async (req, res) => {
     }
     res.json({message: 'received trained model'});
     console.log("Received trained model from client");
-    const sid = req.headers["sid"];
+    const sid = req.body.sid;
     let decoded = [];
     let ind = 0;
     // Maybe label these with multer...

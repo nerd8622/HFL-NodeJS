@@ -58,9 +58,9 @@
             const form = new FormData();
             form.append('weights', weightBlob);
             form.append('shape', new Blob([new Uint8Array(shapeT.buffer)]));
+            from.append('sid', socket.id);
             let xhr = new XMLHttpRequest();
             xhr.open("POST", message.callback, true);
-            xhr.setRequestHeader("sid", socket.id);
             xhr.send(form);
             console.log("Trained Model Uploaded to Edge Server!");
         });
