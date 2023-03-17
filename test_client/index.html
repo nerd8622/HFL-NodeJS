@@ -43,7 +43,7 @@
                 epochs: trainEpochs,
                 callbacks: {
                     onEpochEnd: async (epoch, logs) => {
-                        console.log(`  Epoch ${epoch}/${trainEpochs}`);
+                        console.log(`  Epoch ${epoch+1}/${trainEpochs}`);
                     }
                 }
             });

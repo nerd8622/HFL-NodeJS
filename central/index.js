@@ -9,14 +9,17 @@ const { model } = require('./model.js');
 const app = express();
 app.use(express.json());
 app.use("/model", express.static(path.join(__dirname, "model")));
+app.use(errorMiddleware);
 const upload = multer();
 //app.use(authMiddleware);
 
 const port = 3000;
 const host = "127.0.0.1";
+
 const edge_servers = {};
-const curModel = {};
-const dataSize = 400;
+
+// Size of dataset, split among clients
+const dataSize = 50000;
 // iterations = [central, edge, client]
 const iterations = [4, 4, 4];
 let central_iterations = iterations[0];
@@ -27,7 +30,9 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/start', async (req, res) => {
+    // Call this endpoint to start the learning!
     res.json({message: 'Starting!'});
+    const curModel = {};
     curModel.data = generateTrainPartitions(edge_servers, dataSize);
     console.log(`Prepped data for ${curModel.data.length} edge servers. There are ${curModel.data.reduce((a, b) => a + b, 0)} total clients.`);
     await model.save("file://" + path.join(__dirname, "model"));
@@ -51,7 +56,7 @@ app.post('/register', async (req, res) => {
     console.log(`Edge server connected from ${req.body.url}!`);
 });
 
-app.post('/upload', upload.any(), async (req, res) => {
+app.post('/upload', upload.fields([{ name: 'weights', maxCount: 1 }, { name: 'shape', maxCount: 1 }]), async (req, res) => {
     function convertTypedArray(src, type) {
         const buffer = new ArrayBuffer(src.byteLength);
         src.constructor.from(buffer).set(src);
@@ -63,8 +68,8 @@ app.post('/upload', upload.any(), async (req, res) => {
     let decoded = [];
     let ind = 0;
     // Maybe label these with multer...
-    let wBuff = convertTypedArray(req.files[0].buffer, Float32Array);
-    let shape = convertTypedArray(req.files[1].buffer, Uint32Array);
+    let wBuff = convertTypedArray(req.files['weights'][0].buffer, Float32Array);
+    let shape = convertTypedArray(req.files['shape'][0].buffer, Uint32Array);
     for (let i = 0; i < shape.length; i += 1){
         decoded.push(wBuff.slice(ind, ind+shape[i]));
         ind += shape[i];

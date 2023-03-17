@@ -20,6 +20,7 @@ const io = new Server(httpServer, {
 app.use(express.json());
 app.use(cors());
 app.use("/model", cors({origin: "*"}), express.static(path.join(__dirname, "model")));
+app.use(errorMiddleware);
 const upload = multer();
 //app.use(authMiddleware);
 
@@ -33,7 +34,13 @@ const clients = {};
 let edge_iterations;
 
 const setup = async () => {
-    await apiPost(`${server.url}/register`, {url: server.callback});
+    let connected = false;
+    while (!connected){
+        const reponse = await apiPost(`${server.url}/register`, {url: server.callback});
+        if (reponse.status == 200){
+            connected = true;
+        }
+    }
     console.log("Registering with central server!");
 };
 setup();
@@ -63,7 +70,7 @@ app.post('/download', async (req, res) => {
     console.log("Recieved model from Central Server");
 });
 
-app.post('/upload', cors({origin: "*"}), upload.any(), async (req, res) => {
+app.post('/upload', cors({origin: "*"}), upload.fields([{ name: 'weights', maxCount: 1 }, { name: 'shape', maxCount: 1 }]), async (req, res) => {
     function convertTypedArray(src, type) {
         const buffer = new ArrayBuffer(src.byteLength);
         src.constructor.from(buffer).set(src);
@@ -75,8 +82,8 @@ app.post('/upload', cors({origin: "*"}), upload.any(), async (req, res) => {
     let decoded = [];
     let ind = 0;
     // Maybe label these with multer...
-    let wBuff = convertTypedArray(req.files[0].buffer, Float32Array);
-    let shape = convertTypedArray(req.files[1].buffer, Uint32Array);
+    let wBuff = convertTypedArray(req.files['weights'][0].buffer, Float32Array);
+    let shape = convertTypedArray(req.files['shape'][0].buffer, Uint32Array);
     for (let i = 0; i < shape.length; i += 1){
         decoded.push(wBuff.slice(ind, ind+shape[i]));
         ind += shape[i];
