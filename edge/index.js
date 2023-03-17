@@ -31,6 +31,7 @@ const central_server = "http://127.0.0.1:3000"
 const server = {url: central_server, callback: `http://${host}:${port}`};
 const clients = {};
 let edge_iterations;
+let cData;
 
 const setup = async () => {
     await apiPost(`${server.url}/register`, {url: server.callback});
@@ -46,6 +47,7 @@ app.get('/', async (req, res) => {
 app.post('/download', async (req, res) => {
     res.json({message: 'model received'});
     const model = req.body;
+    cData = model.data;
     const fmodel = await tf.loadLayersModel(model.model);
     await fmodel.save("file://" + path.join(__dirname, "model"));
     model.model = `http://${host}:${port}/model/model.json`;
@@ -79,6 +81,8 @@ app.post('/upload', cors({origin: "*"}), upload.any(), async (req, res) => {
     if (agg){
         edge_iterations[0] -= 1;
         if (edge_iterations[0] > 0){
+            const model = {};
+            model.data = cData;
             model.model = `http://${host}:${port}/model/model.json`;
             model.callback = `http://${host}:${port}/upload`;
             model.iterations = edge_iterations[1];

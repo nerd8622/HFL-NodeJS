@@ -53,7 +53,7 @@ const sendUpstream = async (server) => {
         method: "POST",
         data: form
     };
-    const response = await apiPost(`${server.url}/upload`, form);
+    const response = await axios(opt);
 }
 
 //Sends data upstream if all clients have sent a model

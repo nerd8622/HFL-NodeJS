@@ -17,6 +17,7 @@ const host = "127.0.0.1";
 const edge_servers = {};
 const curModel = {};
 const dataSize = 400;
+let eData;
 // iterations = [central, edge, client]
 const iterations = [4, 4, 4];
 let central_iterations = iterations[0];
@@ -28,7 +29,8 @@ app.get('/', async (req, res) => {
 
 app.get('/start', async (req, res) => {
     res.json({message: 'Starting!'});
-    curModel.data = generateTrainPartitions(edge_servers, dataSize);
+    eData = generateTrainPartitions(edge_servers, dataSize);
+    curModel.data = eData;
     console.log(curModel.data);
     await model.save("file://" + path.join(__dirname, "model"));
     curModel.model = `http://${host}:${port}/model/model.json`;
@@ -67,7 +69,9 @@ app.post('/upload', upload.any(), async (req, res) => {
     const agg = await aggregate(edge_servers, iterations);
     if (agg){
         central_iterations -= 1;
-        if (central_iterations[0] > 0){
+        if (central_iterations > 0){
+            const model = {};
+            model.data = eData;
             model.model = `http://${host}:${port}/model/model.json`;
             model.callback = `http://${host}:${port}/upload`;
             model.iterations = iterations.slice(1);
