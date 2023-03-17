@@ -29,7 +29,7 @@ app.get('/', async (req, res) => {
 app.get('/start', async (req, res) => {
     res.json({message: 'Starting!'});
     curModel.data = generateTrainPartitions(edge_servers, dataSize);
-    console.log(curModel.data);
+    console.log(`Prepped data for ${curModel.data.length} edge servers. There are ${curModel.data.reduce((a, b) => a + b, 0)} total clients.`);
     await model.save("file://" + path.join(__dirname, "model"));
     curModel.model = `http://${host}:${port}/model/model.json`;
     curModel.iterations = iterations.slice(1);
@@ -48,8 +48,7 @@ app.post('/register', async (req, res) => {
     res.json({message: 'successfully registered!'});
     //maybe have central generate the id itself based on request address (hash)
     edge_servers[req.body.url] = {url: req.body.url};
-    console.log("Edge server connected!");
-    console.log(req.body);
+    console.log(`Edge server connected from ${req.body.url}!`);
 });
 
 app.post('/upload', upload.any(), async (req, res) => {
@@ -74,6 +73,7 @@ app.post('/upload', upload.any(), async (req, res) => {
     const agg = await aggregate(edge_servers);
     if (agg){
         central_iterations -= 1;
+        console.log("Central Server iteration complete!");
         if (central_iterations > 0){
             await sendDownstream(edge_servers);
         } else{

@@ -20,7 +20,7 @@
     <script type="module">
         var hash = window.location.hash.substring(1);
         if (!hash) hash = 3001;
-        console.log(`Attempting connection to: ws://127.0.0.1:${hash}!`);
+        //console.log(`Attempting connection to: ws://127.0.0.1:${hash}!`);
         import { io } from "https://cdn.socket.io/4.4.1/socket.io.esm.min.js";
         const socket = io(`ws://127.0.0.1:${hash}`);
 
@@ -33,14 +33,21 @@
             await data.load(message.data.start, message.data.size);
             const {trImages, trLabels} = data.getTrainData();
 
-            console.log(model.summary());
+            console.log("Begin client training!");
             await model.compile({
                 optimizer: 'adam',
                 loss: 'categoricalCrossentropy',
                 metrics: ['accuracy'],
             });
-            await model.fit(trImages, trLabels, {epochs: trainEpochs});
-            console.log(model.summary());
+            await model.fit(trImages, trLabels, {
+                epochs: trainEpochs,
+                callbacks: {
+                    onEpochEnd: async (epoch, logs) => {
+                        console.log(`  Epoch ${epoch}/${trainEpochs}`);
+                    }
+                }
+            });
+            console.log("End client training!");
             let weights = [];
             let shape = [];
             for (let i = 0; i < model.getWeights().length; i++) {

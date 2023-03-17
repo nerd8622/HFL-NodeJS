@@ -85,13 +85,13 @@ app.post('/upload', cors({origin: "*"}), upload.any(), async (req, res) => {
     const agg = await aggregate(clients);
     if (agg){
         edge_iterations[0] -= 1;
+        console.log("Edge server iteration complete!");
         if (edge_iterations[0] > 0){
             await sendDownstream(clients);
         } else{
             await sendUpstream(server);
         }
     }
-    console.log(edge_iterations);
 });
 
 io.on('connection', async (sock) => {
