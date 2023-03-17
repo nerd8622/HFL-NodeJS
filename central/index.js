@@ -15,6 +15,9 @@ const host = "127.0.0.1";
 const edge_servers = {};
 const curModel = {};
 const dataSize = 400;
+// iterations = [central, edge, client]
+const iterations = [4, 4, 4];
+let central_iterations = iterations[0];
 
 app.get('/', async (req, res) => {
     //Replace with control panel or information...
@@ -27,6 +30,7 @@ app.get('/start', async (req, res) => {
     console.log(curModel.data);
     await model.save("file://" + path.join(__dirname, "model"));
     curModel.model = `http://${host}:${port}/model/model.json`;
+    curModel.iterations = iterations.slice(1);
     await sendDownstream(edge_servers, curModel);
     console.log("Sending model to edge servers!");
 });
@@ -50,10 +54,6 @@ app.post('/status', async (req, res) => {
     res.json({message: 'acknowledged!'});
     edge_servers[req.body.url].numClients = req.body.numClients;
     console.log(`Edge ${req.body.url} has ${req.body.numClients} client(s)!`)
-});
-
-app.get('/model', async (req, res) => {
-    res.sendFile(path.join(__dirname, "model", "model.json"));
 });
 
 app.get('*', async (req, res) => {

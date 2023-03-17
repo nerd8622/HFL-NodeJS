@@ -27,6 +27,7 @@
         socket.on('download', async (message) =>{
             console.log("Received model from Edge Server!");
             const model = await tf.loadLayersModel(message.model.model);
+            const trainEpochs = message.iterations;
 
             const data = new MnistData();
             await data.load(message.data.start, message.data.size);
@@ -38,7 +39,7 @@
                 loss: 'categoricalCrossentropy',
                 metrics: ['accuracy'],
             });
-            await model.fit(trImages, trLabels);
+            await model.fit(trImages, trLabels, {epochs: trainEpochs});
             console.log(model.summary());
             let weights = [];
             let shape = [];

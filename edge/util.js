@@ -7,7 +7,7 @@ const sendDownstream = async (clients, model) => {
     let i = 0;
     for (let c in clients){
         const client = clients[c];
-        const cmodel = {model: model, data: model.data[i]};
+        const cmodel = {model: model, data: model.data[i], iterations: model.iterations};
         const response = await client.sock.emit('download', cmodel);
         i+=1;
     }
@@ -30,7 +30,7 @@ const sendUpstream = async (server, model) => {
 }
 
 //Sends data upstream if all clients have sent a model
-const aggregate = async (server, clients) => {
+const aggregate = async (server, clients, edge_iterations) => {
     let allData = true;
     let numClients = 0;
     for (let c in clients) {
@@ -39,6 +39,7 @@ const aggregate = async (server, clients) => {
     } 
     if (allData){
         //do learning
+        edge_iterations -= 1;
         ckeys = Object.keys(clients);
         aggregatedModel = clients[ckeys[0]];
         for (let c = 1; c < ckeys.length; c+=1){
@@ -55,8 +56,13 @@ const aggregate = async (server, clients) => {
             amodel.getWeights()[i].setWeights(aggregatedModel[i]);
         }
         await amodel.save("file://" + path.join(__dirname, "model"));
-        await sendUpstream(server, "nothing yet, still need to implement iterations");
+        if (edge_iterations > 0){
+            return true;
+        }else{
+            await sendUpstream(server, "nothing yet, still need to implement iterations");
+        }
     }
+    return false;
 }
 
 const errorMiddleware = (err, req, res, next) => {

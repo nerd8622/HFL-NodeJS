@@ -30,6 +30,7 @@ const central_server = "http://127.0.0.1:3000"
 
 const server = {url: central_server, callback: `http://${host}:${port}`};
 const clients = {};
+let edge_iterations;
 
 const setup = async () => {
     await apiPost(`${server.url}/register`, {url: server.callback});
@@ -49,6 +50,8 @@ app.post('/download', async (req, res) => {
     await fmodel.save("file://" + path.join(__dirname, "model"));
     model.model = `http://${host}:${port}/model/model.json`;
     model.callback = `http://${host}:${port}/upload`;
+    edge_iterations = model.iterations[0];
+    model.iterations = model.iterations[1];
     await sendDownstream(clients, model);
     console.log("Recieved model from Central Server");
 });
@@ -72,7 +75,7 @@ app.post('/upload', cors({origin: "*"}), upload.any(), async (req, res) => {
         i += shape[i];
     }
     clients[sid].model = decoded;
-    await aggregate(server, clients);
+    await aggregate(server, clients, edge_iterations);
 });
 
 io.on('connection', async (sock) => {

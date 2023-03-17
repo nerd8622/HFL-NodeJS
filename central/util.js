@@ -10,7 +10,7 @@ const sendDownstream = async (servers, model) => {
         const opt = {
             url: `${server.url}/download`,
             method: "POST",
-            data: {model: model.model, data: model.data[i]},
+            data: {model: model.model, data: model.data[i], iterations: model.iterations},
             headers: {
                 'Content-Type': 'application/json',
             }
