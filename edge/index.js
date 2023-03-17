@@ -31,7 +31,6 @@ const central_server = "http://127.0.0.1:3000"
 const server = {url: central_server, callback: `http://${host}:${port}`};
 const clients = {};
 let edge_iterations;
-let cData;
 
 const setup = async () => {
     await apiPost(`${server.url}/register`, {url: server.callback});
@@ -47,14 +46,20 @@ app.get('/', async (req, res) => {
 app.post('/download', async (req, res) => {
     res.json({message: 'model received'});
     const model = req.body;
-    cData = model.data;
     const fmodel = await tf.loadLayersModel(model.model);
     await fmodel.save("file://" + path.join(__dirname, "model"));
     model.model = `http://${host}:${port}/model/model.json`;
     model.callback = `http://${host}:${port}/upload`;
     edge_iterations = model.iterations;
     model.iterations = model.iterations[1];
-    await sendDownstream(clients, model);
+    let i = 0;
+    for (let c in clients){
+        const cmodel = Object.assign({}, model);
+        cmodel.data = cmodel.data[i];
+        clients[c].data = cmodel;
+        i+=1;
+    }
+    await sendDownstream(clients);
     console.log("Recieved model from Central Server");
 });
 
@@ -77,16 +82,11 @@ app.post('/upload', cors({origin: "*"}), upload.any(), async (req, res) => {
         ind += shape[i];
     }
     clients[sid].model = decoded;
-    const agg = await aggregate(server, clients, edge_iterations);
+    const agg = await aggregate(clients);
     if (agg){
         edge_iterations[0] -= 1;
         if (edge_iterations[0] > 0){
-            const model = {};
-            model.data = cData;
-            model.model = `http://${host}:${port}/model/model.json`;
-            model.callback = `http://${host}:${port}/upload`;
-            model.iterations = edge_iterations[1];
-            await sendDownstream(clients, model);
+            await sendDownstream(clients);
         } else{
             sendUpstream(server);
         }

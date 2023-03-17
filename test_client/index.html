@@ -26,7 +26,7 @@
 
         socket.on('download', async (message) =>{
             console.log("Received model from Edge Server!");
-            const model = await tf.loadLayersModel(message.model.model);
+            const model = await tf.loadLayersModel(message.model);
             const trainEpochs = message.iterations;
 
             const data = new MnistData();
@@ -59,7 +59,7 @@
             form.append('weights', weightBlob);
             form.append('shape', new Blob([new Uint8Array(shapeT.buffer)]));
             let xhr = new XMLHttpRequest();
-            xhr.open("POST", message.model.callback, true);
+            xhr.open("POST", message.callback, true);
             xhr.setRequestHeader("sid", socket.id);
             xhr.send(form);
             console.log("Trained Model Uploaded to Edge Server!");

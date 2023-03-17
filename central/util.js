@@ -5,24 +5,22 @@ const BodyFormData = require('form-data');
 const tf = require('@tensorflow/tfjs-node');
 const path = require('path');
 
-const sendDownstream = async (servers, model) => {
-    let i = 0;
+const sendDownstream = async (servers) => {
     for(let s in servers) {
         const server = servers[s];
         const opt = {
             url: `${server.url}/download`,
             method: "POST",
-            data: {model: model.model, data: model.data[i], iterations: model.iterations},
+            data: {...server.data},
             headers: {
                 'Content-Type': 'application/json',
             }
         };
         const response = await axios(opt);
-        i+=1;
     }
 }
 
-const aggregate = async (edge_servers, iterations) => {
+const aggregate = async (edge_servers) => {
     const allData = true;
     let numEdges = 0;
     for (let e in edge_servers) {

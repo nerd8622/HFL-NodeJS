@@ -5,13 +5,11 @@ const BodyFormData = require('form-data');
 const tf = require('@tensorflow/tfjs-node');
 const path = require('path');
 
-const sendDownstream = async (clients, model) => {
-    let i = 0;
+const sendDownstream = async (clients) => {
     for (let c in clients){
         const client = clients[c];
-        const cmodel = {model: model, data: model.data[i], iterations: model.iterations};
+        const cmodel = {...client.data};
         const response = await client.sock.emit('download', cmodel);
-        i+=1;
     }
 }
 
@@ -57,23 +55,26 @@ const sendUpstream = async (server) => {
 }
 
 //Sends data upstream if all clients have sent a model
-const aggregate = async (server, clients, edge_iterations) => {
+const aggregate = async (clients) => {
     let allData = true;
     let numClients = 0;
     for (let c in clients) {
         if (!clients[c].model) allData = false;
         numClients += 1;
     } 
+    console.log(allData);
     if (allData){
         //do learning
         ckeys = Object.keys(clients);
-        aggregatedModel = clients[ckeys[0]].model;
+        aggregatedModel = Object.assign({},clients[ckeys[0]].model);
+        clients[ckeys[0]].model = false;
         for (let c = 1; c < ckeys.length; c+=1){
             const cmodel = clients[ckeys[c]].model;
             for (let i = 0; i < cmodel.length; i+=1){
                 for (let j = 0; j < cmodel[i].length; c+=1){
                     if (c = 1) aggregatedModel[i][j] /= numClients;
                     aggregatedModel[i][j] += cmodel[i][j]/numClients;
+                    clients[ckeys[c]].model = false;
                 }
             }
         }
