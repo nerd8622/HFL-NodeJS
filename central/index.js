@@ -34,7 +34,7 @@ app.get('/start', async (req, res) => {
     res.json({message: 'Starting!'});
     const curModel = {};
     curModel.data = generateTrainPartitions(edge_servers, dataSize);
-    console.log(`Prepped data for ${curModel.data.length} edge servers. There are ${curModel.data.reduce((a, b) => a + b, 0)} total clients.`);
+    console.log(`Prepped data for ${curModel.data.length} edge servers. There are ${curModel.data.reduce((a, b) => a + b.length, 0)} total clients.`);
     await model.save("file://" + path.join(__dirname, "model"));
     curModel.model = `http://${host}:${port}/model/model.json`;
     curModel.iterations = iterations.slice(1);
