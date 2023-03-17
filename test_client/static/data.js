@@ -105,12 +105,12 @@ class MnistData {
    *     `[numTrainExamples, 10]`.
    */
   getTrainData() {
-    const xs = tf.tensor2d(
+    const trImages = tf.tensor2d(
         this.trainImages,
         [this.trainImages.length / IMAGE_SIZE, IMAGE_SIZE]);
-    const labels = tf.tensor2d(
+    const trLabels = tf.tensor2d(
         this.trainLabels, [this.trainLabels.length / NUM_CLASSES, NUM_CLASSES]);
-    return {xs, labels};
+    return {trImages, trLabels};
   }
 
   /**

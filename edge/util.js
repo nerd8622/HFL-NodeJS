@@ -7,7 +7,7 @@ const sendDownstream = async (clients, model) => {
     let i = 0;
     for (let c in clients){
         const client = clients[c];
-        const cmodel = {model: model.model, data: model.data[i]};
+        const cmodel = {model: model, data: model.data[i]};
         const response = await client.sock.emit('download', cmodel);
         i+=1;
     }
@@ -31,7 +31,7 @@ const sendUpstream = async (server, model) => {
 
 //Sends data upstream if all clients have sent a model
 const aggregate = async (server, clients) => {
-    const allData = true;
+    let allData = true;
     for (let c in clients) if (!c.model) allData = false;
     if (allData){
         //do learning

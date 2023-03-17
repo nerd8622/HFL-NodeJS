@@ -1,6 +1,7 @@
 // Copyright (c) 2023 David Canaday
 
 const express = require('express');
+const multer  = require('multer');
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const axios = require('axios');
@@ -17,7 +18,9 @@ const io = new Server(httpServer, {
     }
 });
 app.use(express.json());
+app.use(cors());
 app.use("/model", cors({origin: "*"}), express.static(path.join(__dirname, "model")));
+const upload = multer();
 //app.use(authMiddleware);
 
 if (process.argv.length === 2) port = 3001;
@@ -50,11 +53,22 @@ app.post('/download', async (req, res) => {
     console.log("Recieved model from Central Server");
 });
 
-app.post('/upload', async (req, res) => {
+app.post('/upload', cors({origin: "*"}), upload.any(), async (req, res) => {
     res.json({message: 'received trained model'});
-    const sid = req.headers["sid"];
-    clients[sid].model = req.files[0].filename;
     console.log("Received trained model from client");
+    const sid = req.headers["sid"];
+    let decoded = [];
+    let ind = 0;
+    console.log(req.files);
+    const wBuff = new Float32Array(req.files[0].buffer.buffer);
+    const shape = new Uint32Array(req.files[1].buffer.buffer);
+    console.log(shape);
+    for (let i = 0; i < shape.length; i += 1){
+        decoded.push(wBuff.slice(ind, ind+shape[i]));
+        i += shape[i];
+    }
+    console.log(decoded);
+    clients[sid].model = 0;
     await aggregate(server, clients);
 });
 
