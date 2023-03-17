@@ -20,6 +20,7 @@ const apiPost = async (url, data) => {
         data: data,
         headers: {
             'Content-Type': 'application/json',
+            'Authorization': 'Bearer token'
         }
     };
     return await axios(opt);
@@ -95,14 +96,10 @@ const errorMiddleware = (err, req, res, next) => {
     });
   }
   
-const authMiddleware = (req, res, next) => {
-    const dest = req.originalUrl;
-    const tUrl = dest ? `/auth?dest=${encodeURIComponent(dest)}` : '/auth';
-    if (!req.session.authed){
-        res.redirect(tUrl);
-    }else{
-        next();
-    }
+  const authMiddleware = (req, res, next) => {
+    if (!req.headers.Authorization) res.send(403,"Authentication Failed");
+    else if (req.headers.Authorization != `Bearer token`) res.send(403,"Authentication Failed");
+    else next();
 }
 
 module.exports = { errorMiddleware, authMiddleware, sendDownstream, sendUpstream, aggregate, apiPost};

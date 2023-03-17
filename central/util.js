@@ -14,6 +14,7 @@ const sendDownstream = async (servers) => {
             data: {...server.data},
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer token`
             }
         };
         const response = await axios(opt);
@@ -35,7 +36,7 @@ const aggregate = async (edge_servers) => {
             const emodel = edge_servers[ekeys[e]].model;
             for (let i = 0; i < emodel.length; i+=1){
                 for (let j = 0; j < emodel[i].length; c+=1){
-                    if (e = 1) aggregatedModel[i][j] /= numEdges;
+                    if (e == 1) aggregatedModel[i][j] /= numEdges;
                     aggregatedModel[i][j] += emodel[i][j]/numEdges;
                 }
             }
@@ -80,9 +81,8 @@ const errorMiddleware = (err, req, res, next) => {
 }
   
 const authMiddleware = (req, res, next) => {
-    const dest = req.originalUrl;
-    const tUrl = dest ? `/auth?dest=${encodeURIComponent(dest)}` : '/auth';
-    if (!req.session.authed) res.redirect(tUrl);
+    if (!req.headers.Authorization) res.send(403,"Authentication Failed");
+    else if (req.headers.Authorization != `Bearer token`) res.send(403,"Authentication Failed");
     else next();
 }
 

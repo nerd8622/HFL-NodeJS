@@ -22,7 +22,11 @@
         if (!hash) hash = 3001;
         //console.log(`Attempting connection to: ws://127.0.0.1:${hash}!`);
         import { io } from "https://cdn.socket.io/4.4.1/socket.io.esm.min.js";
-        const socket = io(`ws://127.0.0.1:${hash}`);
+        const socket = io(`ws://127.0.0.1:${hash}`, {
+            extraHeaders: {
+                'Authorization': `Bearer token`
+            }
+        });
 
         socket.on('download', async (message) =>{
             console.log("Received model from Edge Server!");
@@ -68,6 +72,7 @@
             form.append('sid', socket.id);
             let xhr = new XMLHttpRequest();
             xhr.open("POST", message.callback, true);
+            xhr.setRequestHeader('Authorization', `Bearer token`);
             xhr.send(form);
             console.log("Trained Model Uploaded to Edge Server!");
         });
