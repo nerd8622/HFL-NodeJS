@@ -3,7 +3,7 @@
 const express = require('express');
 const multer  = require('multer');
 const path = require('path');
-const { errorMiddleware, sendDownstream, aggregate, generateTrainPartitions } = require('./util.js');
+const { errorMiddleware, authMiddleware, sendDownstream, aggregate, generateTrainPartitions } = require('./util.js');
 const { model } = require('./model.js');
 
 const app = express();
@@ -11,7 +11,7 @@ app.use(express.json());
 app.use("/model", express.static(path.join(__dirname, "model")));
 app.use(errorMiddleware);
 const upload = multer();
-//app.use(authMiddleware);
+
 
 const port = 3000;
 const host = "127.0.0.1";
@@ -19,7 +19,7 @@ const host = "127.0.0.1";
 const edge_servers = {};
 
 // Size of dataset, split among clients
-const dataSize = 50000;
+const dataSize = 500;
 // iterations = [central, edge, client]
 const iterations = [4, 4, 4];
 let central_iterations = iterations[0];
@@ -48,6 +48,8 @@ app.get('/start', async (req, res) => {
     await sendDownstream(edge_servers);
     console.log("Sending model to edge servers!");
 });
+
+app.use(authMiddleware);
 
 app.post('/register', async (req, res) => {
     res.json({message: 'successfully registered!'});

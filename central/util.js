@@ -81,8 +81,10 @@ const errorMiddleware = (err, req, res, next) => {
 }
   
 const authMiddleware = (req, res, next) => {
-    if (!req.headers.Authorization) res.send(403,"Authentication Failed");
-    else if (req.headers.Authorization != `Bearer token`) res.send(403,"Authentication Failed");
+    const auth = req.header("Authorization");
+    if (auth != `Bearer token`) {
+        res.status(403).send("Authentication Failed");
+    }
     else next();
 }
 

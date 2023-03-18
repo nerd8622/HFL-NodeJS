@@ -8,7 +8,7 @@ const axios = require('axios');
 const path = require('path');
 var cors = require('cors')
 const tf = require('@tensorflow/tfjs-node');
-const { errorMiddleware, sendDownstream, sendUpstream, aggregate, apiPost } = require('./util.js');
+const { errorMiddleware, authMiddleware, sendDownstream, sendUpstream, aggregate, apiPost } = require('./util.js');
 
 const app = express();
 const httpServer = createServer(app);
@@ -22,7 +22,7 @@ app.use(cors());
 app.use("/model", cors({origin: "*"}), express.static(path.join(__dirname, "model")));
 app.use(errorMiddleware);
 const upload = multer();
-//app.use(authMiddleware);
+app.use(authMiddleware);
 
 if (process.argv.length === 2) port = 3001;
 else port = parseInt(process.argv[2]);
