@@ -23,10 +23,12 @@ const apiPost = async (url, data) => {
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
-        },
-        validateStatus: (status) => {return true}
+        }
     };
-    return await axios(opt)
+    const response = await axios(opt).catch((err) => {
+        console.log(err);
+    });
+    return response;
 }
 
 const sendUpstream = async (server) => {
@@ -94,14 +96,9 @@ const aggregate = async (clients) => {
 const TFRequest = {requestInit: {headers: {'Authorization': `Bearer ${token}`}}};
 
 const errorMiddleware = (err, req, res, next) => {
-    if (err.status) {
-        res.status(err.status);
-    } else {
-        res.status(500);
-    }
-    res.json({
-        message: "Something Failed!"
-    });
+    if (err.status) res.status(err.status);
+    else res.status(500);
+    res.json({message: "Something Failed!"});
 }
   
 const authMiddleware = (req, res, next) => {

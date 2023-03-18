@@ -19,7 +19,9 @@ const sendDownstream = async (servers) => {
                 'Authorization': `Bearer ${token}`
             }
         };
-        const response = await axios(opt);
+        const response = await axios(opt).catch((err) => {
+            delete servers[s];
+        });
     }
 }
 
@@ -78,7 +80,6 @@ const generateTrainPartitions = (edge_servers, modelSize) => {
 const errorMiddleware = (err, req, res, next) => {
     if (err.status) res.status(err.status);
     else res.status(500);
-    
     res.json({message: "Something Failed!"});
 }
   
