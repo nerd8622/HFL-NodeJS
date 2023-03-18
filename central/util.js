@@ -5,16 +5,18 @@ const BodyFormData = require('form-data');
 const tf = require('@tensorflow/tfjs-node');
 const path = require('path');
 
+const token = 'token';
+
 const sendDownstream = async (servers) => {
     for(let s in servers) {
         const server = servers[s];
         const opt = {
             url: `${server.url}/download`,
             method: "POST",
-            data: {...server.data},
+            data: server.data,
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer token`
+                'Authorization': `Bearer ${token}`
             }
         };
         const response = await axios(opt);
@@ -82,7 +84,7 @@ const errorMiddleware = (err, req, res, next) => {
   
 const authMiddleware = (req, res, next) => {
     const auth = req.header("Authorization");
-    if (auth != `Bearer token`) {
+    if (auth != `Bearer ${token}`) {
         res.status(403).send("Authentication Failed");
     }
     else next();

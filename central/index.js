@@ -8,7 +8,7 @@ const { model } = require('./model.js');
 
 const app = express();
 app.use(express.json());
-app.use("/model", express.static(path.join(__dirname, "model")));
+app.use("/model", authMiddleware, express.static(path.join(__dirname, "model")));
 app.use(errorMiddleware);
 const upload = multer();
 

@@ -5,10 +5,12 @@ const BodyFormData = require('form-data');
 const tf = require('@tensorflow/tfjs-node');
 const path = require('path');
 
+const token = 'token';
+
 const sendDownstream = async (clients) => {
     for (let c in clients){
         const client = clients[c];
-        const cmodel = {...client.data};
+        const cmodel = client.data;
         const response = await client.sock.emit('download', cmodel);
     }
 }
@@ -20,7 +22,7 @@ const apiPost = async (url, data) => {
         data: data,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer token'
+            'Authorization': `Bearer ${token}`
         },
         validateStatus: (status) => {return true}
     };
@@ -51,7 +53,10 @@ const sendUpstream = async (server) => {
     const opt = {
         url: `${server.url}/upload`,
         method: "POST",
-        data: form
+        data: form,
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
     };
     const response = await axios(opt);
 }
@@ -86,6 +91,8 @@ const aggregate = async (clients) => {
     return true;
 }
 
+const TFRequest = {requestInit: {headers: {'Authorization': `Bearer ${token}`}}};
+
 const errorMiddleware = (err, req, res, next) => {
     if (err.status) {
         res.status(err.status);
@@ -99,10 +106,10 @@ const errorMiddleware = (err, req, res, next) => {
   
 const authMiddleware = (req, res, next) => {
     const auth = req.header("Authorization");
-    if (auth != `Bearer token`) {
+    if (auth != `Bearer ${token}`) {
         res.status(403).send("Authentication Failed");
     }
     else next();
 }
 
-module.exports = { errorMiddleware, authMiddleware, sendDownstream, sendUpstream, aggregate, apiPost};
+module.exports = { errorMiddleware, authMiddleware, sendDownstream, sendUpstream, aggregate, apiPost, TFRequest };

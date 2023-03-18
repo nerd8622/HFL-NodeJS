@@ -8,21 +8,18 @@ const axios = require('axios');
 const path = require('path');
 var cors = require('cors')
 const tf = require('@tensorflow/tfjs-node');
-const { errorMiddleware, authMiddleware, sendDownstream, sendUpstream, aggregate, apiPost } = require('./util.js');
+const { errorMiddleware, authMiddleware, sendDownstream, sendUpstream, aggregate, apiPost, TFRequest } = require('./util.js');
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
-    cors: {
-        origin: '*',
-    }
-});
+const io = new Server(httpServer, {cors: {origin: '*'}});
 app.use(express.json());
 app.use(cors());
-app.use("/model", cors({origin: "*"}), express.static(path.join(__dirname, "model")));
 app.use(errorMiddleware);
-const upload = multer();
 app.use(authMiddleware);
+app.use("/model", cors({origin: "*"}), express.static(path.join(__dirname, "model")));
+const upload = multer();
+
 
 if (process.argv.length === 2) port = 3001;
 else port = parseInt(process.argv[2]);
@@ -53,7 +50,7 @@ app.get('/', async (req, res) => {
 app.post('/download', async (req, res) => {
     res.json({message: 'model received'});
     const model = req.body;
-    const fmodel = await tf.loadLayersModel(model.model);
+    const fmodel = await tf.loadLayersModel(model.model, TFRequest);
     await fmodel.save("file://" + path.join(__dirname, "model"));
     model.model = `http://${host}:${port}/model/model.json`;
     model.callback = `http://${host}:${port}/upload`;
