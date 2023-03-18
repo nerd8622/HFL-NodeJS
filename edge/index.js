@@ -102,6 +102,10 @@ io.on('connection', async (sock) => {
     console.log("Client connected!");
     clients[sock.id] = {sock: sock};
     await apiPost(`${server.url}/status`, {url: server.callback, numClients: Object.keys(clients).length});
+    sock.on('disconnect', async () => {
+        delete clients[sock.id];
+        await apiPost(`${server.url}/status`, {url: server.callback, numClients: Object.keys(clients).length});
+    });
     //Maybe delete from dict when disconnect...
 });
 
