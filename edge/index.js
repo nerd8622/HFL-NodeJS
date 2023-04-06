@@ -23,8 +23,8 @@ const upload = multer();
 
 if (process.argv.length === 2) port = 3001;
 else port = parseInt(process.argv[2]);
-const host = "127.0.0.1";
-const central_server = "http://127.0.0.1:3000"
+const host = "138.67.222.214";
+const central_server = "http://138.67.222.214:3000"
 
 const server = {url: central_server, callback: `http://${host}:${port}`};
 const clients = {};

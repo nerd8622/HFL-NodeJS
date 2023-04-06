@@ -15,6 +15,7 @@
     <script>
         window.addEventListener("load", function () {
             ConsoleJS.init({selector: "pre.console"});
+            document.body.style.background = "#FF00FF";
         });
     </script>
     <script type="module">
@@ -23,14 +24,15 @@
         if (!hash) hash = 3001;
         //console.log(`Attempting connection to: ws://127.0.0.1:${hash}!`);
         import { io } from "https://cdn.socket.io/4.4.1/socket.io.esm.min.js";
-        const socket = io(`ws://127.0.0.1:${hash}`, {
+        const socket = io(`ws://138.67.222.214:${hash}`, {
             extraHeaders: {
-                'Authorization': `Bearer token`
+                'Authorization': `Bearer ${token}`
             }
         });
 
         socket.on('download', async (message) =>{
             console.log("Received model from Edge Server!");
+            document.body.style.background = "#FFFFFF";
             const TFRequest = {requestInit: {headers: {'Authorization': `Bearer ${token}`}}};
             const model = await tf.loadLayersModel(message.model, TFRequest);
             const trainEpochs = message.iterations;
