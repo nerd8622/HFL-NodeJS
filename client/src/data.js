@@ -113,20 +113,23 @@ class MnistData {
     // Only create one big array to hold batch of images.
     const imagesShape = [sampleSize, IMAGE_HEIGHT*IMAGE_WIDTH];
     const images = new Float32Array(tf.util.sizeFromShape(imagesShape));
-    const labels = new Float32Array(tf.util.sizeFromShape([sampleSize, 1]));
+    const labels = new Float32Array(tf.util.sizeFromShape([sampleSize, LABEL_FLAT_SIZE]));
 
     let imageOffset = 0;
     let labelOffset = 0;
-    for (let i = beginInd; i < sampleSize; ++i) {
+    for (let i = beginInd; i < sampleSize+beginInd; i++) {
       images.set(this.dataset[imagesIndex][i], imageOffset);
-      labels.set(this.dataset[labelsIndex][i], labelOffset);
+      let tmp = this.dataset[labelsIndex][i];
+      for (let j = 0; j < 10; j++){
+        labels.set(tmp[0]==j?new Float32Array([1.0]) : new Float32Array([0.0]), labelOffset);
+        labelOffset += 1;
+      }
       imageOffset += IMAGE_FLAT_SIZE;
-      labelOffset += 1;
     }
-    tf.oneHot(tf.tensor1d(labels, 'float32'), LABEL_FLAT_SIZE).print();
+    //tf.oneHot(tf.tensor1d(labels, 'float32'), LABEL_FLAT_SIZE).print();
     return {
       trImages: tf.tensor2d(images, imagesShape),
-      trLabels: tf.oneHot(tf.tensor1d(labels, 'float32'), LABEL_FLAT_SIZE).toFloat()
+      trLabels: tf.tensor2d(labels, [sampleSize, LABEL_FLAT_SIZE])
     };
   }
 }

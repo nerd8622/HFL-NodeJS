@@ -45,7 +45,6 @@ class MnistData {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const imgRequest = new Promise((resolve, reject) => {
-      img.crossOrigin = '';
       img.onload = () => {
         img.width = img.naturalWidth;
         img.height = img.naturalHeight;
@@ -77,6 +76,7 @@ class MnistData {
 
         resolve();
       };
+      img.crossOrigin = '';
       img.src = MNIST_IMAGES_SPRITE_PATH;
     });
 

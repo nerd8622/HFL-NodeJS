@@ -28,7 +28,8 @@ const onDownload = async (message) => {
         metrics: ['accuracy'],
     });
     console.log("FIT!");
-    console.log(trLabels);
+    //trLabels.print();
+    //trImages.print(true);
     await model.fit(trImages, trLabels, {
         epochs: trainEpochs,
         callbacks: {

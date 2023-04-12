@@ -67,6 +67,19 @@ app.post('/download', async (req, res) => {
     console.log("Recieved model from Central Server");
 });
 
+const checkUpload = async () => {
+    const agg = await aggregate(clients);
+    if (agg){
+        edge_iterations[0] -= 1;
+        console.log("Edge server iteration complete!");
+        if (edge_iterations[0] > 0){
+            await sendDownstream(clients);
+        } else{
+            await sendUpstream(server);
+        }
+    }
+}
+
 app.post('/upload', cors({origin: "*"}), upload.fields([{ name: 'weights', maxCount: 1 }, { name: 'shape', maxCount: 1 }]), async (req, res) => {
     function convertTypedArray(src, type) {
         const buffer = new ArrayBuffer(src.byteLength);
@@ -86,16 +99,7 @@ app.post('/upload', cors({origin: "*"}), upload.fields([{ name: 'weights', maxCo
         ind += shape[i];
     }
     clients[sid].model = decoded;
-    const agg = await aggregate(clients);
-    if (agg){
-        edge_iterations[0] -= 1;
-        console.log("Edge server iteration complete!");
-        if (edge_iterations[0] > 0){
-            await sendDownstream(clients);
-        } else{
-            await sendUpstream(server);
-        }
-    }
+    await checkUpload();
 });
 
 io.on('connection', async (sock) => {
@@ -103,8 +107,10 @@ io.on('connection', async (sock) => {
     clients[sock.id] = {sock: sock};
     await apiPost(`${server.url}/status`, {url: server.callback, numClients: Object.keys(clients).length});
     sock.on('disconnect', async () => {
+        console.log(`Client disconnect: ${sock.handshake.address}!`);
         delete clients[sock.id];
         await apiPost(`${server.url}/status`, {url: server.callback, numClients: Object.keys(clients).length});
+        await checkUpload();
     });
     //Maybe delete from dict when disconnect...
 });
