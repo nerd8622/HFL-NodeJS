@@ -70,6 +70,7 @@ const aggregate = async (clients) => {
         if (!clients[c].model) return false;
         numClients += 1;
     } 
+    if (numClients <= 0) return false;
     //do learning
     ckeys = Object.keys(clients);
     aggregatedModel = Object.assign({},clients[ckeys[0]].model);

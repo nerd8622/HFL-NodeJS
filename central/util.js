@@ -26,7 +26,7 @@ const sendDownstream = async (servers) => {
 }
 
 const aggregate = async (edge_servers) => {
-    const allData = true;
+    let allData = true;
     let numEdges = 0;
     for (let e in edge_servers) {
         if (!edge_servers[e].model) allData = false;

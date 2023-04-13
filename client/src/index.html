@@ -1,0 +1,121 @@
+<!-- Copyright (c) 2023 David Canaday -->
+<!DOCTYPE html>
+<head>
+    <title>HFL Client</title>
+</head>
+<body>
+    <div class="container">
+        <h1>HFL Client</h1>
+        <h id="console"><h>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+    <script>
+        window.addEventListener("load", function () {
+            ConsoleJS.init({selector: "pre.console"});
+            document.body.style.background = "#FF00FF";
+        });
+    </script>
+    <script type="module">
+        const token = "token";
+        var hash = window.location.hash.substring(1);
+        if (!hash) hash = 3001;
+        //console.log(`Attempting connection to: ws://127.0.0.1:${hash}!`);
+        import { io } from "https://cdn.socket.io/4.4.1/socket.io.esm.min.js";
+        const socket = io(`ws://138.67.222.214:${hash}`, {
+            extraHeaders: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        let iteration = 0;
+        let numepochs = 0;
+        let curepoch = 0;
+        let loaded = false;
+
+        const statusStr = () => {document.getElementById("console").innerText = `Status: Epoch ${curepoch}/${numepochs} - Iteration ${iteration} (${loaded})`;}
+        statusStr();
+
+        const IMAGE_H = 28;
+        const IMAGE_W = 28;
+        const IMAGE_SIZE = IMAGE_H * IMAGE_W;
+        const NUM_CLASSES = 10;
+        let images = null;
+        let labels = null;
+        let trImages = null;
+        let trLabels = null;
+        const lblresp = await fetch("http://138.67.222.214:2999/lbl.bin");
+        const lblraw = await lblresp.arrayBuffer();
+        const ldata = new Float32Array(lblraw);
+        const imgresp = await fetch("http://138.67.222.214:2999/img.bin");
+        const imgraw = await imgresp.arrayBuffer();
+        const idata = new Float32Array(imgraw);
+
+        console.log("data loaded!");
+        loaded = true;
+        statusStr();
+
+        const dataprep = async (start, size) => {
+            images = idata.slice(start*IMAGE_SIZE, size*IMAGE_SIZE);
+            labels = ldata.slice(start*NUM_CLASSES, size*NUM_CLASSES);
+            trImages = tf.tensor2d(images, [images.length / IMAGE_SIZE, IMAGE_SIZE] );
+            trLabels = tf.tensor2d(labels, [labels.length / NUM_CLASSES, NUM_CLASSES]);
+        }
+
+        socket.on("download", async (message) =>{
+            iteration += 1;
+            curepoch = 0;
+            numepochs = message.iterations;
+            statusStr();
+            console.log("Received model from Edge Server!");
+            document.body.style.background = "#FFFFFF";
+            const TFRequest = {requestInit: {headers: {"Authorization": `Bearer ${token}`}}};
+            const model = await tf.loadLayersModel(message.model, TFRequest);
+            const trainEpochs = message.iterations;
+            if (!images || !labels){
+                await dataprep(message.data.start, message.data.size);
+            }
+
+            console.log("Begin client training!");
+            await model.compile({
+                optimizer: "adam",
+                loss: "categoricalCrossentropy",
+                metrics: ["accuracy"],
+            });
+            await model.fit(trImages, trLabels, {
+                epochs: trainEpochs,
+                callbacks: {
+                    onEpochEnd: async (epoch, logs) => {
+                        console.log(`  Epoch ${epoch+1}/${trainEpochs}`);
+                        curepoch += 1;
+                        statusStr();
+                    }
+                }
+            });
+            console.log("End client training!");
+            let weights = [];
+            let shape = [];
+            for (let i = 0; i < model.getWeights().length; i++) {
+                weights.push(await model.getWeights()[i].data());
+                shape.push(weights[i].length);
+            }
+            let weightsT = new Float32Array(shape.reduce((a, b) => a + b, 0));
+            let ind = 0;
+            for (let i = 0; i < shape.length; i++){
+                weightsT.set(weights[i], ind);
+                ind += shape[i];
+            }
+            const shapeT = new Uint32Array(shape);
+            const weightBlob = new Blob([new Uint8Array(weightsT.buffer)]);
+            const form = new FormData();
+            form.append("weights", weightBlob);
+            form.append("shape", new Blob([new Uint8Array(shapeT.buffer)]));
+            form.append("sid", socket.id);
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", message.callback, true);
+            xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+            xhr.send(form);
+            console.log("Trained Model Uploaded to Edge Server!");
+        });
+    </script>
+</body>
+</html>
