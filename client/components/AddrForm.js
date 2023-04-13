@@ -26,7 +26,8 @@ const styles = StyleSheet.create({
         paddingTop: 30,
         textAlign: "center",
         alignItems: "center",
-        borderRadius: 10
+        borderRadius: 10,
+        marginTop: 40
 
     },
     text: {

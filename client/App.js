@@ -19,7 +19,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.container}>
       <AddrForm setAddr={setAddr} submit={submit}/>
-      <WebView style={styles.web} source={{ html: `${content}` }}/>
+      <WebView style={styles.web} scalesPageToFit={false} useWebKit={false} scrollEnabled={false} source={{ html: `${content}` }}/>
       <StatusBar style="auto" />
     </SafeAreaView>
   );
