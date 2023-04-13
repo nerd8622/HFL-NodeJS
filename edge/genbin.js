@@ -174,16 +174,16 @@ const go = async () => {
     const {images: images, labels: labels} = await mnist.getTrainData();
     const imgB = Buffer.from(new Float32Array(images.flat()).buffer);
     zlib.gzip(imgB, (err, buff) => {
-      const imgout = buff.toString('base64');
-      fs.writeFile('trainImg.bin', imgout, err => {
+      //const imgout = buff.toString('base64');
+      fs.writeFile('img.bin', buff, "binary", err => {
         if (err) console.error(err);
       });
     });
 
     const lblB = Buffer.from(new Float32Array(labels.flat()).buffer);
     zlib.gzip(lblB, (err, buff) => {
-      const lblout = buff.toString('base64');
-      fs.writeFile('trainLbl.bin', lblout, err => {
+      //const lblout = buff.toString('base64');
+      fs.writeFile('lbl.bin', buff, "binary", err => {
         if (err) console.error(err);
       });
     });
