@@ -17,13 +17,13 @@ const AddrForm = ({ setAddr: setAddr, submit: submit }) => {
 const styles = StyleSheet.create({
     container: {
         width: 300,
-        height: 500,
+        height: 280,
         borderWidth: 1,
         borderColor: "black",
         shadowColor: "black",
         shadowRadius: 7,
         paddingHorizontal: 10,
-        paddingTop: 50,
+        paddingTop: 30,
         textAlign: "center",
         alignItems: "center",
         borderRadius: 10

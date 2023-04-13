@@ -172,12 +172,22 @@ const go = async () => {
     console.log("start");
     await mnist.loadData();
     const {images: images, labels: labels} = await mnist.getTrainData();
-    fs.writeFile('trainImg.bin', Buffer.from(new Float32Array(images.flat()).buffer), "binary", err => {
+    const imgB = Buffer.from(new Float32Array(images.flat()).buffer);
+    zlib.gzip(imgB, (err, buff) => {
+      const imgout = buff.toString('base64');
+      fs.writeFile('trainImg.bin', imgout, err => {
         if (err) console.error(err);
+      });
     });
-    fs.writeFile('trainLbl.bin', Buffer.from(new Float32Array(labels.flat()).buffer), "binary", err => {
+
+    const lblB = Buffer.from(new Float32Array(labels.flat()).buffer);
+    zlib.gzip(lblB, (err, buff) => {
+      const lblout = buff.toString('base64');
+      fs.writeFile('trainLbl.bin', lblout, err => {
         if (err) console.error(err);
+      });
     });
+
 }
 go().then(() => {
     console.log("done");
