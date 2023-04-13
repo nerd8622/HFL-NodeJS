@@ -1,12 +1,20 @@
 # HFL-NodeJS
 Hierarchical Federated Learning implementation is NodeJS. Created by David Canaday to aide an undergraduate research program at Colorado School of Mines.
 
-# Usage Instructions
+# Usage Instructions (development)
 0. Ensure you are running NodeJS 18.X.X or above!
 1. Run `npm i`
 2. Run "start_central.bat" and "start_client_server.bat"
 3. Run "start_edge.bat" as many times as needed and specify a port each time.
 4. Run "start_client.bat" and specify port of edge server to connect to.
+5. Run "start_sim.bat"
+
+# Usage Instruction (testing)
+0. Run `npm i`
+1. Run `node data.js` in the central folder
+2. Move and rename the bin files and place them in test_client
+3. Follow steps 2-3 from previous instructions
+4. Run the expo app in client
 5. Run "start_sim.bat"
 
 # Progress
