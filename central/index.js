@@ -5,6 +5,7 @@ const multer  = require('multer');
 const path = require('path');
 const { errorMiddleware, authMiddleware, sendDownstream, aggregate, generateTrainPartitions } = require('./util.js');
 const { model } = require('./model.js');
+require('dotenv').config();
 
 const app = express();
 app.use(express.json());
@@ -12,8 +13,8 @@ app.use("/model", authMiddleware, express.static(path.join(__dirname, "model")))
 app.use(errorMiddleware);
 const upload = multer();
 
-const port = 3000;
-const host = "138.67.222.214";
+const port = process.env.PORT || 3000;
+const host = process.env.HOST || "127.0.0.1";
 
 const edge_servers = {};
 

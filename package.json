@@ -17,5 +17,8 @@
     "multer": "^1.4.5-lts.1",
     "socket.io": "^4.6.1",
     "sqlite3": "^5.1.4"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.3"
   }
 }

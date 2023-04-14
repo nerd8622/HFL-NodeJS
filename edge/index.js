@@ -9,6 +9,7 @@ const path = require('path');
 var cors = require('cors')
 const tf = require('@tensorflow/tfjs-node');
 const { errorMiddleware, authMiddleware, sendDownstream, sendUpstream, aggregate, apiPost, TFRequest } = require('./util.js');
+require('dotenv').config();
 
 const app = express();
 const httpServer = createServer(app);
@@ -20,11 +21,9 @@ app.use(authMiddleware);
 app.use("/model", cors({origin: "*"}), express.static(path.join(__dirname, "model")));
 const upload = multer();
 
-
-if (process.argv.length === 2) port = 3001;
-else port = parseInt(process.argv[2]);
-const host = "138.67.222.214";
-const central_server = "http://138.67.222.214:3000"
+const port = process.env.PORT || 3001;
+const host = process.env.HOST || "127.0.0.1";
+const central_server = process.env.CENTRAL_SERVER || "http://127.0.0.1:3000";
 
 const server = {url: central_server, callback: `http://${host}:${port}`};
 const clients = {};
