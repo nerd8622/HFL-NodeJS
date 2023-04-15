@@ -81,6 +81,7 @@ app.post('/upload', upload.fields([{ name: 'weights', maxCount: 1 }, { name: 'sh
     if (agg){
         central_iterations -= 1;
         console.log("Central Server iteration complete!");
+        console.log(`Model accuracy: ${agg[1]}%!`);
         if (central_iterations > 0){
             await sendDownstream(edge_servers);
         } else{
@@ -100,5 +101,5 @@ app.get('*', async (req, res) => {
 });
 
 app.listen(port, host, async () => {
-    console.log(`Central Server running on port ${port}!`);
+    console.log(`Central Server running on ${host}:${port}!`);
 });

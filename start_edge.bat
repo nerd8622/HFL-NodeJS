@@ -1,4 +1,6 @@
 @echo off
-set /p "port=Enter Port: "
-node edge\index.js %port%
+set /p "PORT=Enter Port: "
+set /p "HOST=Enter Server Hostname: "
+set /p "CENTRAL_SERVER=Enter Central Server Hostname: "
+node edge\index.js
 pause

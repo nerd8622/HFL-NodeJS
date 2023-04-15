@@ -119,5 +119,5 @@ app.get('*', async (req, res) => {
 });
 
 httpServer.listen(port, host, async () => {
-    console.log(`Edge Server running on port ${port}!`);
+    console.log(`Edge Server running on ${host}:${port}!`);
 });

@@ -4,8 +4,36 @@ const axios = require('axios');
 const BodyFormData = require('form-data');
 const tf = require('@tensorflow/tfjs-node');
 const path = require('path');
+const zlib = require('zlib');
+const util = require('util');
+const fs = require('fs');
 
 const token = 'token';
+var testLbl, testImg;
+
+const testDataRead = async (filename, size) => {
+    const fbuf = fs.readFileSync(filename);
+    const gunzip = util.promisify(zlib.gunzip);
+    const buf = await gunzip(fbuf);
+    const ubuf = new Uint8Array(buf);
+    const arr = new Float32Array(ubuf.buffer);
+    console.log(arr);
+    return tf.tensor2d(arr, [arr.length / size, size])
+}
+
+const validateModel = async (model) => {
+    if (!testLbl || !testImg){
+        testLbl = await testDataRead("./central/model/lblval.bin", 10);
+        testImg = await testDataRead("./central/model/imgval.bin", 784);
+    }
+    await model.compile({
+        optimizer: "adam",
+        loss: "categoricalCrossentropy",
+        metrics: ["accuracy"],
+    });
+    const acc = model.evaluate(testImg, testLbl);
+    return acc;
+}
 
 const sendDownstream = async (servers) => {
     for(let s in servers) {
@@ -51,7 +79,7 @@ const aggregate = async (edge_servers) => {
             layers[i].setWeights([tf.tensor(aggregatedModel[i*2], layers[i].kernel.shape), tf.tensor(aggregatedModel[i*2+1], layers[i].bias.shape)]);
         }
         await amodel.save("file://" + path.join(__dirname, "model"));
-        return true;
+        return await validateModel(amodel);
     }
     return false;
 }
