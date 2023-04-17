@@ -19,11 +19,11 @@ const host = process.env.HOST || "127.0.0.1";
 
 const edge_servers = {};
 
-// Size of dataset, split among clients
-const dataSize = 500;
-// iterations = [central, edge, client]
-const iterations = [4, 4, 4];
-let central_iterations = iterations[0];
+// Size of dataset, split among clients (true size is 60,000)
+const dataSize = 10000;
+// iterations = [central (%), edge (#), client (#)]
+const iterations = [0.90, 4, 4];
+let central_accuracy = iterations[0];
 
 app.get('/', async (req, res) => {
     //Replace with control panel or information...
@@ -69,6 +69,7 @@ app.post('/upload', upload.fields([{ name: 'weights', maxCount: 1 }, { name: 'sh
     const eurl = req.body.url;
     res.json({message: 'received model!'});
     console.log("Received averaged model from edge server!");
+    console.log(`Training Time Metric for Edge:\n${req.body.metric}`);
     let decoded = [];
     let ind = 0;
     // Maybe label these with multer...
@@ -81,10 +82,9 @@ app.post('/upload', upload.fields([{ name: 'weights', maxCount: 1 }, { name: 'sh
     edge_servers[eurl].model = decoded;
     const agg = await aggregate(edge_servers);
     if (agg){
-        central_iterations -= 1;
         console.log("Central Server iteration complete!");
-        console.log(`Model accuracy: ${agg[1]}%!`);
-        if (central_iterations > 0){
+        console.log(`Model accuracy: ${agg*100}%! (Target: ${central_accuracy*100}%)`);
+        if (curAccuracy >= central_accuracy){
             await sendDownstream(edge_servers);
         } else{
             console.log("ALL DONE!!!");

@@ -76,7 +76,7 @@ const checkUpload = async () => {
         if (edge_iterations[0] > 0){
             await sendDownstream(clients);
         } else{
-            await sendUpstream(server);
+            await sendUpstream(server, agg);
         }
     }
 }
@@ -90,6 +90,7 @@ app.post('/upload', cors({origin: "*"}), upload.fields([{ name: 'weights', maxCo
     res.json({message: 'received trained model'});
     console.log("Received trained model from client");
     const sid = req.body.sid;
+    const timeMetric = req.body.time;
     let decoded = [];
     let ind = 0;
     // Maybe label these with multer...
@@ -100,6 +101,7 @@ app.post('/upload', cors({origin: "*"}), upload.fields([{ name: 'weights', maxCo
         ind += shape[i];
     }
     clients[sid].model = decoded;
+    clients[sid].time = timeMetric;
     await checkUpload();
 });
 

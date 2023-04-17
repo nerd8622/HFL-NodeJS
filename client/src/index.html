@@ -92,6 +92,7 @@
             const trainEpochs = message.iterations;
             if (!images || !labels) await dataprep(message.data.start, message.data.size);
 
+            const trainStart = performance.now();
             console.log("Begin client training!");
             await model.compile({
                 optimizer: "adam",
@@ -108,7 +109,9 @@
                     }
                 }
             });
-            console.log("End client training!");
+            const trainEnd = performance.now();
+            const trainTime = 1000*(trainEnd-trainStart);
+            console.log(`End client training! Training took ${trainTime} seconds.`);
             
             let weights = [];
             let shape = [];
@@ -128,6 +131,7 @@
             form.append("weights", weightBlob);
             form.append("shape", new Blob([new Uint8Array(shapeT.buffer)]));
             form.append("sid", socket.id);
+            form.append("time", trainTime);
             let xhr = new XMLHttpRequest();
             xhr.open("POST", message.callback, true);
             xhr.setRequestHeader("Authorization", `Bearer ${token}`);
