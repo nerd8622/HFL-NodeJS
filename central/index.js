@@ -5,6 +5,7 @@ const multer  = require('multer');
 const path = require('path');
 const { errorMiddleware, authMiddleware, sendDownstream, aggregate, generateTrainPartitions } = require('./util.js');
 const { model } = require('./model.js');
+const genTestData = require('./gentest.js');
 require('dotenv').config();
 
 const app = express();
@@ -31,6 +32,7 @@ app.get('/', async (req, res) => {
 
 app.get('/start', async (req, res) => {
     // Call this endpoint to start the learning!
+    await genTestData();
     res.json({message: 'Starting!'});
     const curModel = {};
     curModel.data = generateTrainPartitions(edge_servers, dataSize);

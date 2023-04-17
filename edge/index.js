@@ -9,6 +9,7 @@ const path = require('path');
 var cors = require('cors')
 const tf = require('@tensorflow/tfjs-node');
 const { errorMiddleware, authMiddleware, sendDownstream, sendUpstream, aggregate, apiPost, TFRequest } = require('./util.js');
+const genTrainData = require('./genbin.js');
 require('dotenv').config();
 
 const app = express();
@@ -23,13 +24,14 @@ const upload = multer();
 
 const port = process.env.PORT || 3001;
 const host = process.env.HOST || "127.0.0.1";
-const central_server = process.env.CENTRAL_SERVER || "http://127.0.0.1:3000";
+const central_server = `http://${process.env.CENTRAL_SERVER}` || "http://127.0.0.1:3000";
 
 const server = {url: central_server, callback: `http://${host}:${port}`};
 const clients = {};
 let edge_iterations;
 
 const setup = async () => {
+    await genTrainData();
     let connected = false;
     while (!connected){
         const reponse = await apiPost(`${server.url}/register`, {url: server.callback});

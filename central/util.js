@@ -6,13 +6,13 @@ const tf = require('@tensorflow/tfjs-node');
 const path = require('path');
 const zlib = require('zlib');
 const util = require('util');
-const fs = require('fs');
+const fs = require('fs').promises;
 
 const token = 'token';
 var testLbl, testImg;
 
 const testDataRead = async (filename, size) => {
-    const fbuf = fs.readFileSync(filename);
+    const fbuf = await fs.readFile(filename, "binary");
     const gunzip = util.promisify(zlib.gunzip);
     const buf = await gunzip(fbuf);
     const ubuf = new Uint8Array(buf);
@@ -23,8 +23,8 @@ const testDataRead = async (filename, size) => {
 
 const validateModel = async (model) => {
     if (!testLbl || !testImg){
-        testLbl = await testDataRead("./central/model/lblval.bin", 10);
-        testImg = await testDataRead("./central/model/imgval.bin", 784);
+        testLbl = await testDataRead(path.join(__dirname, "model/lblval.bin"), 10);
+        testImg = await testDataRead(path.join(__dirname, "model/imgval.bin"), 784);
     }
     await model.compile({
         optimizer: "adam",

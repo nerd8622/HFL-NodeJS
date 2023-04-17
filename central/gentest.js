@@ -1,6 +1,7 @@
-const tf = require('@tensorflow/tfjs');
+const tf = require('@tensorflow/tfjs-node');
 const assert = require('assert');
 const fs = require('fs');
+const path = require('path');
 const https = require('https');
 const util = require('util');
 const zlib = require('zlib');
@@ -9,10 +10,10 @@ const readFile = util.promisify(fs.readFile);
 
 // MNIST data constants:
 const BASE_URL = 'https://storage.googleapis.com/cvdf-datasets/mnist/';
-const TRAIN_IMAGES_FILE = 'train-images-idx3-ubyte';
-const TRAIN_LABELS_FILE = 'train-labels-idx1-ubyte';
-const TEST_IMAGES_FILE = 't10k-images-idx3-ubyte';
-const TEST_LABELS_FILE = 't10k-labels-idx1-ubyte';
+const TRAIN_IMAGES_FILE = "train-images-idx3-ubyte";
+const TRAIN_LABELS_FILE = "train-labels-idx1-ubyte";
+const TEST_IMAGES_FILE = "t10k-images-idx3-ubyte";
+const TEST_LABELS_FILE = "t10k-labels-idx1-ubyte";
 const IMAGE_HEADER_MAGIC_NUM = 2051;
 const IMAGE_HEADER_BYTES = 16;
 const IMAGE_HEIGHT = 28;
@@ -23,21 +24,26 @@ const LABEL_HEADER_BYTES = 8;
 const LABEL_RECORD_BYTE = 1;
 const LABEL_FLAT_SIZE = 10;
 
+const pathConvert = (name) => {
+  return path.join(__dirname, `model/${name}`);
+}
+
 // Downloads a test file only once and returns the buffer for the file.
 async function fetchOnceAndSaveToDiskWithBuffer(filename) {
+  const filepath = pathConvert(filename);
   return new Promise(resolve => {
     const url = `${BASE_URL}${filename}.gz`;
-    if (fs.existsSync(filename)) {
-      resolve(readFile(filename));
+    if (fs.existsSync(filepath)) {
+      resolve(readFile(filepath));
       return;
     }
-    const file = fs.createWriteStream(filename);
+    const file = fs.createWriteStream(filepath);
     console.log(`  * Downloading from: ${url}`);
     https.get(url, (response) => {
       const unzip = zlib.createGunzip();
       response.pipe(unzip).pipe(file);
       unzip.on('end', () => {
-        resolve(readFile(filename));
+        resolve(readFile(filepath));
       });
     });
   });
@@ -167,30 +173,32 @@ class MnistDataset {
   }
 }
 
-const mnist = new MnistDataset();
-const go = async () => {
-    console.log("start");
-    await mnist.loadData();
-    const {images: images, labels: labels} = await mnist.getTestData();
-    console.log(images);
-    const imgB = Buffer.from(new Float32Array(images.flat()).buffer);
-    zlib.gzip(imgB, (err, buff) => {
-      //const imgout = buff.toString('base64');
-      fs.writeFile('imgval.bin', buff, "binary", err => {
-        if (err) console.error(err);
-      });
+const genTestData = async () => {
+  const imgpath = path.join(__dirname, "model/imgval.bin");
+  const lblpath = path.join(__dirname, "model/lblval.bin");
+  if(fs.existsSync(imgpath) && fs.existsSync(lblpath)) return;
+  const mnist = new MnistDataset();
+  await mnist.loadData();
+  const {images: images, labels: labels} = await mnist.getTestData();
+  console.log(images);
+  const imgB = Buffer.from(new Float32Array(images.flat()).buffer);
+  zlib.gzip(imgB, (err, buff) => {
+    //const imgout = buff.toString('base64');
+    fs.writeFile(imgpath, buff, "binary", err => {
+      if (err) console.error(err);
     });
-
-    const lblB = Buffer.from(new Float32Array(labels.flat()).buffer);
-    zlib.gzip(lblB, (err, buff) => {
-      //const lblout = buff.toString('base64');
-      fs.writeFile('lblval.bin', buff, "binary", err => {
-        if (err) console.error(err);
-      });
+  });
+  const lblB = Buffer.from(new Float32Array(labels.flat()).buffer);
+  zlib.gzip(lblB, (err, buff) => {
+    //const lblout = buff.toString('base64');
+    fs.writeFile(lblpath, buff, "binary", err => {
+      if (err) console.error(err);
     });
-
+  });
+  fs.unlink(pathConvert(TRAIN_IMAGES_FILE));
+  fs.unlink(pathConvert(TRAIN_LABELS_FILE));
+  fs.unlink(pathConvert(TEST_IMAGES_FILE));
+  fs.unlink(pathConvert(TEST_LABELS_FILE));
 }
 
-go().then(() => {
-    console.log("done");
-});
+module.exports = genTestData;

@@ -19,19 +19,13 @@
         const token = "token";
         const addr = "ADDR_PLACEHOLDER";
         const TFRequest = {requestInit: {headers: {"Authorization": `Bearer ${token}`}}};
-        
-        //console.log(`Attempting connection to: ws://127.0.0.1:${hash}!`);
-        import { io } from "https://cdn.socket.io/4.4.1/socket.io.esm.min.js";
-        const socket = io(`ws://${addr}`, {
-            extraHeaders: TFRequest.requestInit.headers
-        });
 
         let iteration = 0;
         let numepochs = 0;
         let curepoch = 0;
         let loaded = false;
 
-        const statusStr = () => {document.getElementById("console").innerText = `Status: Epoch ${curepoch}/${numepochs} - Iteration ${iteration} (${loaded})`;}
+        const statusStr = () => {document.getElementById("console").innerText = `Status: Epoch ${curepoch}/${numepochs} - Iteration ${iteration} (${loaded ? "loaded!" : "loading..."})`;}
         statusStr();
 
         const IMAGE_H = 28;
@@ -43,20 +37,16 @@
         let trImages = null;
         let trLabels = null;
 
-        const  decompressArrayBuffer = async (input) => {
-            //create the stream
+        const getTrainData = async (url) => {
+            const resp = await fetch(url, TFRequest.requestInit);
+            const input = await resp.arrayBuffer();
             const ds = new DecompressionStream("gzip");
-            //create the writer
             const writer = ds.writable.getWriter();
-            //write the buffer to the writer thus decompressing it 
             writer.write(input);
             writer.close();
-            //create the output
             const output = [];
-            //create the reader
             const reader = ds.readable.getReader();
             let totalSize = 0;
-            //go through each chunk and add it to the output
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
@@ -65,20 +55,15 @@
             }
             const concatenated = new Uint8Array(totalSize);
             let offset = 0;
-            //finally build the compressed array and return it 
             for (const array of output) {
                 concatenated.set(array, offset);
                 offset += array.byteLength;
             }
-            return concatenated;
+            return new Float32Array(concatenated.buffer);
         }
 
-        const lblresp = await fetch(`http://${addr}/model/lbl.bin`, TFRequest.requestInit);
-        const lblraw = await decompressArrayBuffer(await lblresp.arrayBuffer());
-        const ldata = new Float32Array(lblraw.buffer);
-        const imgresp = await fetch(`http://${addr}/model/img.bin`, TFRequest.requestInit);
-        const imgraw = await decompressArrayBuffer(await imgresp.arrayBuffer());
-        const idata = new Float32Array(imgraw.buffer);
+        const ldata = await getTrainData(`http://${addr}/model/lbl.bin`);
+        const idata = await getTrainData(`http://${addr}/model/img.bin`);
 
         console.log("data loaded!");
         loaded = true;
@@ -91,19 +76,21 @@
             trLabels = tf.tensor2d(labels, [labels.length / NUM_CLASSES, NUM_CLASSES]);
         }
 
+        import { io } from "https://cdn.socket.io/4.4.1/socket.io.esm.min.js";
+        const socket = io(`ws://${addr}`, {
+            extraHeaders: TFRequest.requestInit.headers
+        });
+
         socket.on("download", async (message) =>{
             iteration += 1;
             curepoch = 0;
             numepochs = message.iterations;
             statusStr();
             console.log("Received model from Edge Server!");
-            document.body.style.background = "#FFFFFF";
             
             const model = await tf.loadLayersModel(message.model, TFRequest);
             const trainEpochs = message.iterations;
-            if (!images || !labels){
-                await dataprep(message.data.start, message.data.size);
-            }
+            if (!images || !labels) await dataprep(message.data.start, message.data.size);
 
             console.log("Begin client training!");
             await model.compile({
@@ -122,6 +109,7 @@
                 }
             });
             console.log("End client training!");
+            
             let weights = [];
             let shape = [];
             for (let i = 0; i < model.getWeights().length; i++) {
