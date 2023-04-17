@@ -17,7 +17,6 @@ const testDataRead = async (filename, size) => {
     const buf = await gunzip(fbuf);
     const ubuf = new Uint8Array(buf);
     const arr = new Float32Array(ubuf.buffer);
-    console.log(arr);
     return tf.tensor2d(arr, [arr.length / size, size])
 }
 
@@ -31,8 +30,9 @@ const validateModel = async (model) => {
         loss: "categoricalCrossentropy",
         metrics: ["accuracy"],
     });
-    const acc = model.evaluate(testImg, testLbl);
-    return acc[1].get();
+    const eval = await model.evaluate(testImg, testLbl);
+    const acc = await eval[1].array();
+    return acc;
 }
 
 const sendDownstream = async (servers) => {

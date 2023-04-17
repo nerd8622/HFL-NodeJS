@@ -52,7 +52,7 @@ const sendUpstream = async (server, metric) => {
     form.append('weights', weightBlob);
     form.append('shape', shapeBlob);
     form.append('url', server.callback);
-    form.append('metric', metric);
+    form.append('metric', JSON.stringify({"metric": metric}));
     const opt = {
         url: `${server.url}/upload`,
         method: "POST",

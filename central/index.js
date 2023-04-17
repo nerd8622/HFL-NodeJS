@@ -20,10 +20,11 @@ const host = process.env.HOST || "127.0.0.1";
 const edge_servers = {};
 
 // Size of dataset, split among clients (true size is 60,000)
-const dataSize = 10000;
+const dataSize = 400;
 // iterations = [central (%), edge (#), client (#)]
 const iterations = [0.90, 4, 4];
 let central_accuracy = iterations[0];
+let training_in_progress = false;
 
 app.get('/', async (req, res) => {
     //Replace with control panel or information...
@@ -32,6 +33,7 @@ app.get('/', async (req, res) => {
 
 app.get('/start', async (req, res) => {
     // Call this endpoint to start the learning!
+    training_in_progress = true;
     await genTestData();
     res.json({message: 'Starting!'});
     const curModel = {};
@@ -54,6 +56,10 @@ app.get('/start', async (req, res) => {
 app.use(authMiddleware);
 
 app.post('/register', async (req, res) => {
+    if (training_in_progress) {
+        res.json({message: 'failed to register - training in progress!'});
+        return false;
+    }
     res.json({message: 'successfully registered!'});
     //maybe have central generate the id itself based on request address (hash)
     edge_servers[req.body.url] = {url: req.body.url};
@@ -69,7 +75,7 @@ app.post('/upload', upload.fields([{ name: 'weights', maxCount: 1 }, { name: 'sh
     const eurl = req.body.url;
     res.json({message: 'received model!'});
     console.log("Received averaged model from edge server!");
-    console.log(`Training Time Metric for Edge:\n${req.body.metric}`);
+    console.log(`Training Time Metric for Edge:\n${JSON.parse(req.body.metric)}`);
     let decoded = [];
     let ind = 0;
     // Maybe label these with multer...

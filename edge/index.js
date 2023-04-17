@@ -29,6 +29,7 @@ const central_server = `http://${process.env.CENTRAL_SERVER}` || "http://127.0.0
 const server = {url: central_server, callback: `http://${host}:${port}`};
 const clients = {};
 let edge_iterations;
+let training_in_progress = false;
 
 const setup = async () => {
     await genTrainData();
@@ -49,6 +50,7 @@ app.get('/', async (req, res) => {
 });
 
 app.post('/download', async (req, res) => {
+    training_in_progress = true;
     res.json({message: 'model received'});
     const model = req.body;
     const fmodel = await tf.loadLayersModel(model.model, TFRequest);
@@ -90,7 +92,7 @@ app.post('/upload', cors({origin: "*"}), upload.fields([{ name: 'weights', maxCo
     res.json({message: 'received trained model'});
     console.log("Received trained model from client");
     const sid = req.body.sid;
-    const timeMetric = req.body.time;
+    const timeMetric = JSON.parse(req.body.time);
     let decoded = [];
     let ind = 0;
     // Maybe label these with multer...
@@ -106,6 +108,10 @@ app.post('/upload', cors({origin: "*"}), upload.fields([{ name: 'weights', maxCo
 });
 
 io.on('connection', async (sock) => {
+    if (training_in_progress) {
+        sock.emit('message', 'failed to register - training in progress!');
+        return false;
+    }
     console.log("Client connected!");
     clients[sock.id] = {sock: sock};
     await apiPost(`${server.url}/status`, {url: server.callback, numClients: Object.keys(clients).length});

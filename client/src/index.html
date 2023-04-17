@@ -131,7 +131,7 @@
             form.append("weights", weightBlob);
             form.append("shape", new Blob([new Uint8Array(shapeT.buffer)]));
             form.append("sid", socket.id);
-            form.append("time", trainTime);
+            form.append("time", JSON.stringify({"trainTime": trainTime}));
             let xhr = new XMLHttpRequest();
             xhr.open("POST", message.callback, true);
             xhr.setRequestHeader("Authorization", `Bearer ${token}`);
