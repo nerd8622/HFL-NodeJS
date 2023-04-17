@@ -26,7 +26,7 @@ const apiPost = async (url, data) => {
         }
     };
     const response = await axios(opt).catch((err) => {
-        console.log(err);
+        console.warn("Retrying connection to central server");
     });
     return response;
 }

@@ -4,13 +4,12 @@ const express = require('express');
 const multer  = require('multer');
 const { createServer } = require("http");
 const { Server } = require("socket.io");
-const axios = require('axios');
 const path = require('path');
 var cors = require('cors')
 const tf = require('@tensorflow/tfjs-node');
 const { errorMiddleware, authMiddleware, sendDownstream, sendUpstream, aggregate, apiPost, TFRequest } = require('./util.js');
 const genTrainData = require('./genbin.js');
-require('dotenv').config();
+const config = require('./config.js');
 
 const app = express();
 const httpServer = createServer(app);
@@ -22,11 +21,6 @@ app.use(authMiddleware);
 app.use("/model", cors({origin: "*"}), express.static(path.join(__dirname, "model")));
 const upload = multer();
 
-const port = process.env.PORT || 3001;
-const host = process.env.HOST || "127.0.0.1";
-const central_server = `http://${process.env.CENTRAL_SERVER}` || "http://127.0.0.1:3000";
-
-const server = {url: central_server, callback: `http://${host}:${port}`};
 const clients = {};
 let edge_iterations;
 let training_in_progress = false;
@@ -35,7 +29,7 @@ const setup = async () => {
     await genTrainData();
     let connected = false;
     while (!connected){
-        const reponse = await apiPost(`${server.url}/register`, {url: server.callback});
+        const reponse = await apiPost(`${config.server.url}/register`, {url: config.server.callback});
         if (reponse.status == 200){
             connected = true;
         }
@@ -55,8 +49,8 @@ app.post('/download', async (req, res) => {
     const model = req.body;
     const fmodel = await tf.loadLayersModel(model.model, TFRequest);
     await fmodel.save("file://" + path.join(__dirname, "model"));
-    model.model = `http://${host}:${port}/model/model.json`;
-    model.callback = `http://${host}:${port}/upload`;
+    model.model = config.client.model;
+    model.callback = config.client.callback;
     edge_iterations = model.iterations;
     model.iterations = model.iterations[1];
     let i = 0;
@@ -78,7 +72,8 @@ const checkUpload = async () => {
         if (edge_iterations[0] > 0){
             await sendDownstream(clients);
         } else{
-            await sendUpstream(server, agg);
+            await sendUpstream(config.server, agg);
+            training_in_progress = false;
         }
     }
 }
@@ -114,11 +109,11 @@ io.on('connection', async (sock) => {
     }
     console.log("Client connected!");
     clients[sock.id] = {sock: sock};
-    await apiPost(`${server.url}/status`, {url: server.callback, numClients: Object.keys(clients).length});
+    await apiPost(`${config.server.url}/status`, {url: config.server.callback, numClients: Object.keys(clients).length});
     sock.on('disconnect', async () => {
         console.log(`Client disconnect: ${sock.handshake.address}!`);
         delete clients[sock.id];
-        await apiPost(`${server.url}/status`, {url: server.callback, numClients: Object.keys(clients).length});
+        await apiPost(`${config.server.url}/status`, {url: config.server.callback, numClients: Object.keys(clients).length});
         await checkUpload();
     });
     //Maybe delete from dict when disconnect...
@@ -128,6 +123,6 @@ app.get('*', async (req, res) => {
     res.send("Page Not Found!");
 });
 
-httpServer.listen(port, host, async () => {
-    console.log(`Edge Server running on ${host}:${port}!`);
+httpServer.listen(config.port, config.host, async () => {
+    console.log(`Edge Server running on ${config.host}:${config.port}!`);
 });

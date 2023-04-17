@@ -3,10 +3,10 @@
 const express = require('express');
 const multer  = require('multer');
 const path = require('path');
-const { errorMiddleware, authMiddleware, sendDownstream, aggregate, generateTrainPartitions } = require('./util.js');
+const { errorMiddleware, authMiddleware, sendDownstream, aggregate, generateTrainPartitions, convertTypedArray } = require('./util.js');
 const { model } = require('./model.js');
 const genTestData = require('./gentest.js');
-require('dotenv').config();
+const config = require('./config.js');
 
 const app = express();
 app.use(express.json());
@@ -14,17 +14,9 @@ app.use("/model", authMiddleware, express.static(path.join(__dirname, "model")))
 app.use(errorMiddleware);
 const upload = multer();
 
-const port = process.env.PORT || 3000;
-const host = process.env.HOST || "127.0.0.1";
-
 const edge_servers = {};
-
-// Size of dataset, split among clients (true size is 60,000)
-const dataSize = 400;
-// iterations = [central (%), edge (#), client (#)]
-const iterations = [0.90, 4, 4];
-let central_accuracy = iterations[0];
 let training_in_progress = false;
+let curIterations = config.centralIterations;
 
 app.get('/', async (req, res) => {
     //Replace with control panel or information...
@@ -37,11 +29,11 @@ app.get('/start', async (req, res) => {
     await genTestData();
     res.json({message: 'Starting!'});
     const curModel = {};
-    curModel.data = generateTrainPartitions(edge_servers, dataSize);
-    console.log(`Prepped data for ${curModel.data.length} edge servers. There are ${curModel.data.reduce((a, b) => a + b.length, 0)} total clients.`);
+    curModel.data = generateTrainPartitions(edge_servers, config.dataSize);
+    console.info(`Prepped data for ${curModel.data.length} edge servers. There are ${curModel.data.reduce((a, b) => a + b.length, 0)} total clients.`);
     await model.save("file://" + path.join(__dirname, "model"));
-    curModel.model = `http://${host}:${port}/model/model.json`;
-    curModel.iterations = iterations.slice(1);
+    curModel.model = `http://${config.host}:${config.port}/model/model.json`;
+    curModel.iterations = config.iterations;
     let i = 0;
     for (let e in edge_servers){
         const emodel = Object.assign({}, curModel);
@@ -67,15 +59,10 @@ app.post('/register', async (req, res) => {
 });
 
 app.post('/upload', upload.fields([{ name: 'weights', maxCount: 1 }, { name: 'shape', maxCount: 1 }]), async (req, res) => {
-    function convertTypedArray(src, type) {
-        const buffer = new ArrayBuffer(src.byteLength);
-        src.constructor.from(buffer).set(src);
-        return new type(buffer);
-    }
     const eurl = req.body.url;
     res.json({message: 'received model!'});
     console.log("Received averaged model from edge server!");
-    console.log(`Training Time Metric for Edge:\n${JSON.parse(req.body.metric)}`);
+    console.info(`Training Time Metric for Edge:\n${JSON.parse(req.body.metric)}`);
     let decoded = [];
     let ind = 0;
     // Maybe label these with multer...
@@ -88,12 +75,21 @@ app.post('/upload', upload.fields([{ name: 'weights', maxCount: 1 }, { name: 'sh
     edge_servers[eurl].model = decoded;
     const agg = await aggregate(edge_servers);
     if (agg){
+        let threshold = false;
         console.log("Central Server iteration complete!");
-        console.log(`Model accuracy: ${agg*100}%! (Target: ${central_accuracy*100}%)`);
-        if (curAccuracy >= central_accuracy){
+        console.info(`Model accuracy: ${agg*100}%! (Target: ${config.centralAccuracy*100}%)`);
+        if (config.centralUseIterations){
+            curIterations -= 1;
+            threshold = curIterations <= 0;
+        } else{
+            threshold = curAccuracy >= config.centralAccuracy;
+        }
+        if (threshold){
+            curIterations = config.centralIterations;
             await sendDownstream(edge_servers);
         } else{
             console.log("ALL DONE!!!");
+            training_in_progress = false;
         }
     }
 });
@@ -108,6 +104,6 @@ app.get('*', async (req, res) => {
     res.send("Page Not Found!");
 });
 
-app.listen(port, host, async () => {
-    console.log(`Central Server running on ${host}:${port}!`);
+app.listen(config.port, config.host, async () => {
+    console.log(`Central Server running on ${config.host}:${config.port}!`);
 });

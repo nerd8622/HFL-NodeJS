@@ -1,7 +1,6 @@
 // Copyright (c) 2023 David Canaday
 
 const axios = require('axios');
-const BodyFormData = require('form-data');
 const tf = require('@tensorflow/tfjs-node');
 const path = require('path');
 const zlib = require('zlib');
@@ -119,4 +118,10 @@ const authMiddleware = (req, res, next) => {
     else next();
 }
 
-module.exports = { errorMiddleware, authMiddleware, sendDownstream, aggregate, generateTrainPartitions };
+const convertTypedArray = (src, type) => {
+    const buffer = new ArrayBuffer(src.byteLength);
+    src.constructor.from(buffer).set(src);
+    return new type(buffer);
+}
+
+module.exports = { errorMiddleware, authMiddleware, sendDownstream, aggregate, generateTrainPartitions, convertTypedArray };
