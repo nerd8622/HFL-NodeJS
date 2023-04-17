@@ -195,10 +195,10 @@ const genTrainData = async () => {
       if (err) console.error(err);
     });
   });
-  fs.unlink(pathConvert(TRAIN_IMAGES_FILE));
-  fs.unlink(pathConvert(TRAIN_LABELS_FILE));
-  fs.unlink(pathConvert(TEST_IMAGES_FILE));
-  fs.unlink(pathConvert(TEST_LABELS_FILE));
+  fs.unlink(pathConvert(TRAIN_IMAGES_FILE), err => {});
+  fs.unlink(pathConvert(TRAIN_LABELS_FILE), err => {});
+  fs.unlink(pathConvert(TEST_IMAGES_FILE), err => {});
+  fs.unlink(pathConvert(TEST_LABELS_FILE), err => {});
 }
 
 module.exports = genTrainData; 
