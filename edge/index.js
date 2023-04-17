@@ -30,7 +30,7 @@ const setup = async () => {
     let connected = false;
     while (!connected){
         const reponse = await apiPost(`${config.server.url}/register`, {url: config.server.callback});
-        if (reponse.status == 200){
+        if (reponse?.status == 200){
             connected = true;
         }
     }
